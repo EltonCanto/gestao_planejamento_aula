@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Trimestral - {{ nome }}</title>
+    <style>
+        /* Base Reset */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: white; /* Default to white for PDF generation */
+            font-family: Arial, Helvetica, sans-serif;
+            color: black;
+        }
+
+        /* Document A4 Styles */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 0 auto 20px auto; /* Center on screen if viewed directly */
+        }
+
+        /* Document Formatting */
+        .doc-header {
+            display: flex;
+            border: 1px solid black;
+            align-items: center;
+        }
+
+        .doc-logo {
+            width: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .doc-logo img {
+            max-width: 90px;
+            max-height: 90px;
+            object-fit: contain;
+        }
+
+        .doc-header-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .doc-header-info p {
+            font-size: 10pt;
+            line-height: 1.2;
+            margin: 1px 0;
+        }
+
+        .doc-title-main {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .doc-title-main h2 {
+            font-size: 11pt;
+            margin: 0;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* Student Info */
+        .student-info {
+            font-size: 10pt;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-line {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .ml-4 {
+            margin-left: 20px;
+        }
+
+        .w-auto {
+            min-width: 50px;
+        }
+
+        .info-label {
+            margin-right: 4px;
+        }
+
+        .info-value {
+            border-bottom: 1px solid transparent;
+        }
+
+        .underline-value {
+            border-bottom: 1px solid black;
+        }
+
+        /* Sub header center */
+        .sub-header-center {
+            text-align: center;
+            font-size: 11pt;
+            margin-top: 5px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .freq-table td {
+            border: 1px solid black;
+            padding: 4px;
+            text-align: center;
+            font-size: 9pt;
+            font-weight: bold;
+            width: 50%;
+        }
+
+        .trimestre-title {
+            text-align: center;
+            font-size: 11pt;
+            margin-top: 5px;
+        }
+
+        .visao-geral {
+            font-size: 10pt;
+            min-height: 50px;
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .subjects-table {
+            border: 1px solid black;
+        }
+
+        .subjects-table td {
+            border: 1px solid black;
+            padding: 8px;
+            font-size: 10pt;
+        }
+
+        .vertical-title {
+            width: 50px;
+            text-align: center;
+            vertical-align: middle;
+            background-color: #f9f9f9;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: center;
+            font-weight: bold;
+            font-size: 8pt;
+            white-space: nowrap;
+            margin: auto;
+        }
+
+        .subject-content {
+            white-space: pre-wrap;
+            word-break: break-word;
+            vertical-align: top;
+            min-height: 80px;
+        }
+
+        .signatures-block {
+            margin-top: 30px;
+        }
+
+        .signatures-table {
+            border: 1px solid black;
+            margin-bottom: 5px;
+        }
+
+        .signatures-table td {
+            border: 1px solid black;
+            padding: 6px;
+            font-size: 10pt;
+            width: 50%;
+            font-weight: bold;
+        }
+
+        .sig-header {
+            text-align: center;
+        }
+
+        .sig-cell {
+            min-height: 50px;
+            height: 50px;
+            vertical-align: top;
+        }
+
+        .doc-date {
+            text-align: right;
+            font-size: 10pt;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+
+        .subjects-table tr {
+            page-break-inside: avoid; /* Useful for PDF generators */
+        }
+
+        /* Print Styles - guarantees perfect multi-page A4 generation */
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+            
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            .a4-page {
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                height: auto;
+                padding: 0;
+                margin: 0;
+                page-break-after: always;
+            }
+
+            .a4-page:last-child {
+                page-break-after: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PÁGINA 1: Cabeçalho, Info Aluno e Matérias -->
+    <div class="a4-page">
+        <!-- Header -->
+        <header class="doc-header">
+            <div class="doc-logo">
+                <img src="{{ logo_url|default:'logo.png' }}" alt="Brasão de Teresópolis">
+            </div>
+            <div class="doc-header-info">
+                <p>Estado do Rio de Janeiro</p>
+                <p style="text-transform: uppercase;">PREFEITURA MUNICIPAL DE TERESÓPOLIS</p>
+                <p>Secretaria Municipal de Educação</p>
+                <p>Unidade Escolar: E. M. José Alves Ferreira</p>
+            </div>
+        </header>
+
+        <!-- Document Title -->
+        <div class="doc-title-main">
+            <h2>AVALIAÇÃO DO DESENVOLVIMENTO ENSINO FUNDAMENTAL – ANOS INICIAIS</h2>
+        </div>
+
+        <!-- Student Info -->
+        <div class="student-info">
+            <div class="info-line">
+                <span class="info-label">Nome:</span> <span class="info-value underline-value w-auto">{{ nome }}</span>
+                <span class="info-label ml-4">Data Nasc.</span> <span class="info-value">{{ nasc|default:"--/--/----" }}</span>
+            </div>
+            <div class="info-line">
+                <span class="info-label">Ano de Escolaridade:</span> <span class="info-value">{{ ano_escolaridade }}</span>
+                <span class="info-label ml-4">Turma:</span> <span class="info-value">{{ turma }}</span>
+                <span class="info-label ml-4">Turno:</span> <span class="info-value">{{ turno }}</span>
+            </div>
+            <div class="info-line">
+                <span class="info-label">Professor:</span> <span class="info-value">{{ professor }}</span>
+            </div>
+        </div>
+
+        <!-- Sub Title -->
+        <div class="sub-header-center">
+            <strong>Anos Iniciais do Ensino Fundamental</strong>
+        </div>
+
+        <!-- Frequencia Table -->
+        <table class="freq-table">
+            <tr>
+                <td>Nº de dias letivos no trimestre = <span>{{ dias_letivos }}</span></td>
+                <td>Nº de faltas: <span>{{ faltas }}</span></td>
+            </tr>
+        </table>
+
+        <!-- Trimestre e Ano -->
+        <div class="trimestre-title">
+            <strong>{{ trimestre|default:"_º" }} TRIMESTRE / ANO {{ ano|default:"____" }}</strong>
+        </div>
+
+        <!-- Visao Geral -->
+        <div class="visao-geral content-block">{{ visao_geral|linebreaksbr }}</div>
+
+        <!-- Subjects Table -->
+        <table class="subjects-table">
+            <tr>
+                <td class="vertical-title">
+                    <div class="vertical-text">LINGUAGEM<br>(PORTUGUÊS, ARTES E<br>PRÁTICAS CORPORAIS)</div>
+                </td>
+                <td class="subject-content content-block">{{ linguagem|linebreaksbr }}</td>
+            </tr>
+            <tr>
+                <td class="vertical-title">
+                    <div class="vertical-text">MATEMÁTICA</div>
+                </td>
+                <td class="subject-content content-block">{{ matematica|linebreaksbr }}</td>
+            </tr>
+            <tr>
+                <td class="vertical-title">
+                    <div class="vertical-text">CIÊNCIAS<br>HUMANAS E<br>DA NATUREZA</div>
+                </td>
+                <td class="subject-content content-block">{{ ciencias|linebreaksbr }}</td>
+            </tr>
+            <tr>
+                <td class="vertical-title">
+                    <div class="vertical-text">CONCLUSÃO</div>
+                </td>
+                <td class="subject-content content-block">{{ conclusao|linebreaksbr }}</td>
+            </tr>
+        </table>
+    </div> <!-- Fim da Página 1 -->
+
+    <!-- PÁGINA 2: Assinaturas -->
+    <div class="a4-page">
+        <div class="signatures-block">
+            <table class="signatures-table">
+                <tr>
+                    <td colspan="2" class="sig-header">Assinaturas:</td>
+                </tr>
+                <tr>
+                    <td class="sig-cell">Professor (a)</td>
+                    <td class="sig-cell">O. Ped.</td>
+                </tr>
+                <tr>
+                    <td class="sig-cell">Direção</td>
+                    <td class="sig-cell">Responsável</td>
+                </tr>
+            </table>
+            <div class="doc-date">
+                {{ data_relatorio|default:"Teresópolis, ___ de _______ de ____." }}
+            </div>
+        </div>
+    </div> <!-- Fim da Página 2 -->
+
+</body>
+</html>

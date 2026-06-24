@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | EduGestão{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Visão Geral do Ano Letivo</h2>
+    <p>Bem-vindo ao sistema de gestão de planos de aula.</p>
+    <br>
+    <a href="{% url 'calendario' %}" class="btn">Configurar Dias Letivos</a>
+</div>
+{% endblock %}

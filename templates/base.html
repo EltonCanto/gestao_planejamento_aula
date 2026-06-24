@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gerenciador Escolar{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>EduGestão</h2>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/" class="active">Dashboard</a></li>
+            <li><a href="/escola/">Calendário Letivo</a></li>
+            <li><a href="{% url 'upload_bncc' %}">Ingestão BNCC</a></li>
+            <li><a href="/planejamento-geral/">Planejamento Geral</a></li>
+            <li><a href="/planejamento-diario/">Planejamento Diário</a></li>
+            <li><a href="/relatorios/">Relatórios Trimestrais</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            <div class="user-info">
+                <span>Bem-vindo, Professor</span>
+            </div>
+        </header>
+
+        <section class="content">
+            {% block content %}
+            {% endblock %}
+        </section>
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

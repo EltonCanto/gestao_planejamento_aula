@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Ingestão BNCC | EduGestão{% endblock %}
+{% block page_title %}Upload de PDF da BNCC{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px;">
+    <h2>Importar Habilidades da BNCC</h2>
+    <p class="text-muted">Faça upload de um arquivo PDF contendo as normas da BNCC. A inteligência artificial irá extrair os códigos e as descrições e salvar no banco de dados.</p>
+    <br>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius); 
+                {% if message.tags == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                {% else %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <label for="pdf_file">Arquivos PDF:</label>
+        <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" multiple required>
+
+        <label for="tipo_materia">Tipo das Normas:</label>
+        <select name="tipo_materia" id="tipo_materia" onchange="toggleTrimestre()" required>
+            <option value="G">Matérias Gerais (História, Ciências, Geografia...)</option>
+            <option value="E">Matérias Específicas (Matemática, Português)</option>
+        </select>
+
+        <div id="trimestre_container" style="display: none;">
+            <label for="trimestre_id">Selecione o Trimestre:</label>
+            <select name="trimestre_id" id="trimestre_id">
+                <option value="">-- Escolha --</option>
+                {% for trimestre in trimestres %}
+                    <option value="{{ trimestre.id }}">{{ trimestre.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn" style="margin-top: 1rem; width: 100%;">
+            Extrair via Inteligência Artificial
+        </button>
+    </form>
+</div>
+
+<script>
+function toggleTrimestre() {
+    var tipo = document.getElementById('tipo_materia').value;
+    var container = document.getElementById('trimestre_container');
+    var selectTrimestre = document.getElementById('trimestre_id');
+    
+    if (tipo === 'E') {
+        container.style.display = 'block';
+        selectTrimestre.required = true;
+    } else {
+        container.style.display = 'none';
+        selectTrimestre.required = false;
+        selectTrimestre.value = '';
+    }
+}
+</script>
+{% endblock %}
