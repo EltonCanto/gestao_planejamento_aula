@@ -187,3 +187,44 @@ Retorne apenas o JSON.
     except Exception as e:
         print(f"Erro na geração do planejamento geral via IA: {e}")
         raise Exception(f"Falha na IA ao distribuir normas: {str(e)}")
+
+def sugerir_atividades_ia(turma_nome, tema, normas_texto):
+    """
+    Usa a IA para sugerir 3 atividades para uma aula específica.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise Exception("API Key do OpenRouter não encontrada.")
+
+    llm = ChatOpenAI(
+        openai_api_key=api_key,
+        openai_api_base="https://openrouter.ai/api/v1",
+        model_name="google/gemini-2.5-flash",
+        temperature=0.7
+    )
+
+    template = """
+Você é um especialista em pedagogia.
+O professor precisa de 3 sugestões de atividades curtas e práticas para uma aula.
+
+Turma: {turma}
+Tema da Aula: {tema}
+Normas BNCC (Habilidades) Selecionadas:
+{normas}
+
+Por favor, forneça exatamente 3 sugestões de atividades. Numeradas de 1 a 3. Cada sugestão deve ser um parágrafo curto. Retorne APENAS o texto das sugestões.
+"""
+
+    prompt = PromptTemplate(
+        input_variables=["turma", "tema", "normas"],
+        template=template
+    )
+
+    chain = prompt | llm
+    
+    try:
+        resposta = chain.invoke({"turma": turma_nome, "tema": tema, "normas": normas_texto})
+        return resposta.content.strip()
+    except Exception as e:
+        print(f"Erro na geração de sugestões via IA: {e}")
+        raise Exception(f"Falha na IA ao sugerir atividades: {str(e)}")

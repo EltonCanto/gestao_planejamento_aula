@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Geração do Calendário | EduGestão{% endblock %}
+{% block page_title %}Atenção{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto; border-left: 4px solid #ffc107;">
+    <h2 style="color: #856404;">Confirmação de Sobreescrita</h2>
+    
+    <p>O <strong>Ano Letivo Corrente ({{ ano.ano }})</strong> já possui <strong>{{ dias_existentes }} dias letivos</strong> criados no sistema.</p>
+    
+    <p>Ao prosseguir com a geração para o período de <strong>{{ dados.data_inicial }}</strong> a <strong>{{ dados.data_final }}</strong>, todos os dias já criados para este ano serão <strong>apagados e recriados</strong>, e eventuais feriados terão que ser reconfigurados manualmente.</p>
+    
+    <div style="background-color: #fff3cd; color: #856404; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <i class="fas fa-exclamation-triangle"></i> Nós verificamos e <strong>não há planos de aula vinculados</strong> a estes dias, então é seguro substituí-los.
+    </div>
+
+    <div style="display: flex; gap: 1rem;">
+        <form method="GET" action="{% url 'efetivar_geracao_dias_letivos' %}" style="flex: 1;">
+            <button type="submit" class="btn" style="background-color: #dc3545; width: 100%;">Sim, Sobrescrever Tudo</button>
+        </form>
+        <a href="{% url 'calendario' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Não, Cancelar</a>
+    </div>
+</div>
+{% endblock %}

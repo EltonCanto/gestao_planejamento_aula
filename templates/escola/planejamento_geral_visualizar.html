@@ -44,10 +44,17 @@
             {% for aula in aulas %}
             <tr style="border-bottom: 1px solid var(--border-color);">
                 <td style="padding: 12px; vertical-align: top;">
-                    <strong>{{ aula.dia_letivo.data|date:"d/m/Y" }}</strong>
+                    <strong>{{ aula.dia_letivo.data|date:"d/m/Y" }}</strong><br>
+                    <span style="font-size: 0.85rem; color: #666;">{{ aula.dia_letivo.data|date:"l" }}</span>
                 </td>
                 <td style="padding: 12px; vertical-align: top;">
-                    {{ aula.tema_aula|default:"-" }}
+                    <strong>{{ aula.tema_aula|default:"-" }}</strong>
+                    {% if aula.sugestoes_atividades %}
+                    <div style="margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #17a2b8;">
+                        <strong style="color: #17a2b8;">Sugestões de Atividades:</strong><br>
+                        {{ aula.sugestoes_atividades|linebreaksbr }}
+                    </div>
+                    {% endif %}
                 </td>
                 <td style="padding: 12px; vertical-align: top;">
                     {% if aula.normas.all %}

@@ -1,10 +1,11 @@
 from django.contrib import admin
-from .models import Escola, Trimestre, Turma, Professor, Aluno, TemaPeriodo, DiaLetivo
+from .models import Escola, Trimestre, Turma, Professor, Aluno, TemaPeriodo, DiaLetivo, AnoLetivo
 
 admin.site.register(Escola)
 admin.site.register(Trimestre)
 admin.site.register(Turma)
 admin.site.register(Professor)
+admin.site.register(AnoLetivo)
 
 @admin.register(Aluno)
 class AlunoAdmin(admin.ModelAdmin):

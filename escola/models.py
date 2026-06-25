@@ -1,5 +1,17 @@
 from django.db import models
 
+class AnoLetivo(models.Model):
+    ano = models.IntegerField(unique=True)
+    corrente = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.corrente:
+            AnoLetivo.objects.filter(corrente=True).update(corrente=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.ano} {'(Corrente)' if self.corrente else ''}"
+
 class Escola(models.Model):
     nome = models.CharField(max_length=255)
     endereco = models.TextField()
@@ -56,6 +68,7 @@ class TemaPeriodo(models.Model):
 
 class DiaLetivo(models.Model):
     data = models.DateField(unique=True)
+    ano_letivo = models.ForeignKey(AnoLetivo, on_delete=models.CASCADE, related_name='dias', null=True)
     eh_dia_letivo = models.BooleanField(default=True, help_text="Desmarque para feriados, férias ou dias sem aula.")
     observacao = models.CharField(max_length=255, blank=True, null=True)
 
@@ -111,6 +124,7 @@ class AulaPlanejamentoGeral(models.Model):
     
     tema_aula = models.CharField(max_length=255, blank=True)
     normas = models.ManyToManyField(NormaBNCC, blank=True)
+    sugestoes_atividades = models.TextField(blank=True)
     
     class Meta:
         unique_together = ['turma', 'materia', 'dia_letivo']

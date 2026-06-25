@@ -32,19 +32,25 @@
                 {% for item in plano_revisao %}
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 15px 10px; vertical-align: top;">
-                        <strong>{{ item.dia.data|date:"d/m/Y" }}</strong>
+                        <strong>{{ item.dia.data|date:"d/m/Y" }}</strong><br>
+                        <span style="font-size: 0.85rem; color: #666;">{{ item.dia.data|date:"l" }}</span>
                         <input type="hidden" name="dia_id[]" value="{{ item.dia.id }}">
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top;">
-                        <input type="text" name="tema[]" value="{{ item.tema }}" style="width: 100%;" placeholder="Descreva o tema da aula">
+                        <textarea name="tema[]" id="tema_{{ item.dia.id }}" rows="2" style="width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 5px;" placeholder="Descreva o tema da aula">{{ item.tema }}</textarea>
+                        
+                        <div style="margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 8px;">
+                            <textarea name="sugestoes[]" id="sugestoes_{{ item.dia.id }}" rows="3" style="width: 100%; box-sizing: border-box; margin-bottom: 5px; padding: 5px; font-size: 0.85rem; background: #fafafa;" placeholder="Sugestões de atividades..."></textarea>
+                            <button type="button" class="btn btn-secondary btn-sugerir" data-dia-id="{{ item.dia.id }}" style="font-size: 0.8rem; padding: 4px 8px; width: 100%; background: #17a2b8;">💡 Sugerir Atividades com IA</button>
+                        </div>
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top;">
-                        <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: white;">
+                        <div style="max-height: 180px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: white;">
                             {% for norma in todas_normas %}
                             <label style="display: flex; gap: 8px; margin-bottom: 5px; align-items: flex-start; font-size: 0.9rem; font-weight: normal;">
-                                <input type="checkbox" name="normas_dia_{{ item.dia.id }}" value="{{ norma.id }}" 
+                                <input type="checkbox" name="normas_dia_{{ item.dia.id }}" value="{{ norma.id }}" class="bncc-checkbox"
                                     {% if norma in item.normas %}checked{% endif %}>
-                                <span><strong>{{ norma.codigo }}</strong>: {{ norma.descricao|truncatewords:15 }}</span>
+                                <span><strong>{{ norma.codigo }}</strong> <span class="bncc-count" data-norma-id="{{ norma.id }}" style="color: #007bff; font-weight: bold;">[0]</span>: {{ norma.descricao|truncatewords:15 }}</span>
                             </label>
                             {% endfor %}
                         </div>
@@ -60,4 +66,84 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Contador Dinâmico da BNCC
+    const checkboxes = document.querySelectorAll('.bncc-checkbox');
+    const countSpans = document.querySelectorAll('.bncc-count');
+
+    function updateCounts() {
+        let counts = {};
+        document.querySelectorAll('.bncc-checkbox:checked').forEach(cb => {
+            counts[cb.value] = (counts[cb.value] || 0) + 1;
+        });
+
+        countSpans.forEach(span => {
+            let id = span.getAttribute('data-norma-id');
+            let total = counts[id] || 0;
+            span.textContent = `[${total}]`;
+            span.style.color = total > 0 ? '#28a745' : '#6c757d'; // Verde se > 0
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateCounts);
+    });
+    updateCounts(); // Inicializar
+
+    // 2. Sugestão de Atividades
+    const btnSugerirList = document.querySelectorAll('.btn-sugerir');
+    btnSugerirList.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const diaId = this.getAttribute('data-dia-id');
+            const temaInput = document.getElementById(`tema_${diaId}`);
+            const sugestoesInput = document.getElementById(`sugestoes_${diaId}`);
+            const turmaId = "{{ turma.id }}";
+            
+            // Pega checkboxes marcados nessa linha específica
+            const containerLinha = this.closest('tr');
+            const normasMarcadas = Array.from(containerLinha.querySelectorAll('.bncc-checkbox:checked')).map(cb => cb.value);
+
+            if (!temaInput.value.trim() || normasMarcadas.length === 0) {
+                alert("Para sugerir atividades, é necessário preencher o Tema e selecionar ao menos uma habilidade (BNCC).");
+                return;
+            }
+
+            // UI Loading
+            const originalText = this.innerText;
+            this.innerText = "⏳ Gerando...";
+            this.disabled = true;
+
+            try {
+                const response = await fetch("{% url 'api_sugerir_atividades' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        turma_id: turmaId,
+                        tema: temaInput.value,
+                        normas_ids: normasMarcadas
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.sucesso) {
+                    sugestoesInput.value = data.sugestoes;
+                } else {
+                    alert("Erro: " + data.erro);
+                }
+            } catch (err) {
+                alert("Erro ao conectar com servidor.");
+            } finally {
+                this.innerText = originalText;
+                this.disabled = false;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

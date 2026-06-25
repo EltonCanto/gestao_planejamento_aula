@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.views.generic import ListView
 from django.utils import timezone
-from .models import DiaLetivo
+from .models import DiaLetivo, AnoLetivo, PlanoAula, AulaPlanejamentoGeral
 import calendar
 from datetime import date
 from collections import defaultdict
@@ -40,7 +40,7 @@ class CalendarioView(ListView):
                     dia_bd = dias_bd.get(dia)
                     semana_estruturada.append({
                         'data': dia,
-                        'eh_letivo': dia_bd.eh_dia_letivo if dia_bd else (dia.weekday() < 5),
+                        'eh_letivo': dia_bd.eh_dia_letivo if dia_bd else False,
                         'observacao': dia_bd.observacao if dia_bd else '',
                         'no_banco': bool(dia_bd)
                     })
@@ -141,50 +141,96 @@ def gerar_dias_letivos(request):
         if data_inicial > data_final:
             messages.error(request, "A data inicial deve ser anterior ou igual à data final.")
             return redirect('calendario')
+
+        # Buscar AnoLetivo corrente
+        ano_corrente_obj = AnoLetivo.objects.filter(corrente=True).first()
+        if not ano_corrente_obj:
+            messages.error(request, "Nenhum Ano Letivo corrente configurado no sistema. Por favor, crie um no painel Admin.")
+            return redirect('calendario')
+
+        if data_inicial.year != ano_corrente_obj.ano or data_final.year != ano_corrente_obj.ano:
+            messages.error(request, f"O ano das datas informadas difere do Ano Letivo corrente ({ano_corrente_obj.ano}).")
+            return redirect('calendario')
+
+        # Verificar se existem planejamentos
+        tem_plano = PlanoAula.objects.filter(dia_letivo__ano_letivo=ano_corrente_obj).exists()
+        tem_geral = AulaPlanejamentoGeral.objects.filter(dia_letivo__ano_letivo=ano_corrente_obj).exists()
+
+        if tem_plano or tem_geral:
+            messages.error(request, "Já existem planejamentos criados para o Ano Letivo corrente. A geração automática está bloqueada. Faça ajustes nos dias manualmente.")
+            return redirect('calendario')
+
+        # Verificar se já existem DiasLetivos criados para o ano
+        dias_existentes = DiaLetivo.objects.filter(ano_letivo=ano_corrente_obj).count()
+        if dias_existentes > 0:
+            request.session['gerar_calendario_dados'] = {
+                'data_inicial': data_inicial_str,
+                'data_final': data_final_str
+            }
+            return redirect('confirmar_geracao_dias_letivos')
             
-        delta = data_final - data_inicial
-        dias_criados = 0
-        feriados_marcados = 0
-        
-        # Gera o cache de feriados para os anos envolvidos
-        anos = set([data_inicial.year, data_final.year])
-        feriados = {}
-        for ano in anos:
-            feriados.update(get_feriados(ano))
-        
-        for i in range(delta.days + 1):
-            dia = data_inicial + timedelta(days=i)
-            # Segunda=0, Domingo=6.
-            if dia.weekday() < 5:
-                is_feriado = dia in feriados
-                nome_feriado = feriados.get(dia, '')
-                
-                eh_letivo = not is_feriado
-                
-                obj, created = DiaLetivo.objects.get_or_create(
-                    data=dia,
-                    defaults={
-                        'eh_dia_letivo': eh_letivo,
-                        'observacao': nome_feriado
-                    }
-                )
-                
-                # Se ja existia, a gente atualiza caso seja feriado e estava marcado como aula
-                if not created and is_feriado and obj.eh_dia_letivo:
-                    obj.eh_dia_letivo = False
-                    obj.observacao = nome_feriado
-                    obj.save()
-                    feriados_marcados += 1
-                elif created:
-                    if is_feriado:
-                        feriados_marcados += 1
-                    else:
-                        dias_criados += 1
-                    
-        messages.success(request, f"Calendário gerado! {dias_criados} dias úteis letivos criados e {feriados_marcados} feriados municipais/nacionais adicionados como 'Sem Aula'.")
-        return redirect(f"/escola/?ano={data_inicial.year}&mes={data_inicial.month}")
+        # Se não existe, efetiva direto
+        request.session['gerar_calendario_dados'] = {
+            'data_inicial': data_inicial_str,
+            'data_final': data_final_str
+        }
+        return redirect('efetivar_geracao_dias_letivos')
         
     return redirect('calendario')
+
+def confirmar_geracao_dias_letivos(request):
+    dados = request.session.get('gerar_calendario_dados')
+    if not dados:
+        return redirect('calendario')
+    
+    ano_corrente = AnoLetivo.objects.filter(corrente=True).first()
+    dias_existentes = DiaLetivo.objects.filter(ano_letivo=ano_corrente).count()
+    
+    return render(request, 'escola/confirmar_geracao.html', {
+        'dados': dados,
+        'ano': ano_corrente,
+        'dias_existentes': dias_existentes
+    })
+
+def efetivar_geracao_dias_letivos(request):
+    dados = request.session.get('gerar_calendario_dados')
+    if not dados:
+        return redirect('calendario')
+        
+    data_inicial = datetime.strptime(dados['data_inicial'], '%Y-%m-%d').date()
+    data_final = datetime.strptime(dados['data_final'], '%Y-%m-%d').date()
+    
+    ano_corrente_obj = AnoLetivo.objects.filter(corrente=True).first()
+    
+    # Deletar antigos
+    DiaLetivo.objects.filter(ano_letivo=ano_corrente_obj).delete()
+    
+    delta = data_final - data_inicial
+    feriados = get_feriados(ano_corrente_obj.ano)
+    
+    for i in range(delta.days + 1):
+        dia = data_inicial + timedelta(days=i)
+        if dia.weekday() < 5:
+            is_feriado = dia in feriados
+            nome_feriado = feriados.get(dia, '')
+            
+            eh_letivo = not is_feriado
+            
+            DiaLetivo.objects.create(
+                data=dia,
+                ano_letivo=ano_corrente_obj,
+                eh_dia_letivo=eh_letivo,
+                observacao=nome_feriado
+            )
+                
+    dias_criados = DiaLetivo.objects.filter(ano_letivo=ano_corrente_obj, eh_dia_letivo=True).count()
+    feriados_marcados = DiaLetivo.objects.filter(ano_letivo=ano_corrente_obj, eh_dia_letivo=False).count()
+    
+    if 'gerar_calendario_dados' in request.session:
+        del request.session['gerar_calendario_dados']
+    
+    messages.success(request, f"Calendário gerado! {dias_criados} dias letivos reais criados e {feriados_marcados} dias marcados como 'Sem Aula' (feriados).")
+    return redirect(f"/escola/?ano={data_inicial.year}&mes={data_inicial.month}")
 
 def toggle_dia_letivo(request, data_str):
     if request.method == 'POST':
@@ -192,14 +238,24 @@ def toggle_dia_letivo(request, data_str):
         partes = data_str.split('-')
         if len(partes) == 3:
             data_obj = date(int(partes[0]), int(partes[1]), int(partes[2]))
-            dia, created = DiaLetivo.objects.get_or_create(data=data_obj)
-            if not created:
-                dia.eh_dia_letivo = not dia.eh_dia_letivo
-                dia.save()
-            else:
-                # Se acabou de criar, e final de semana for padrão falso, vamos inverter
-                dia.eh_dia_letivo = False if data_obj.weekday() >= 5 else False
-                dia.save()
+            ano_corrente = AnoLetivo.objects.filter(corrente=True).first()
+            if not ano_corrente:
+                messages.error(request, "É necessário configurar um Ano Letivo corrente no painel Admin primeiro.")
+                return redirect('calendario')
+                
+            dia, created = DiaLetivo.objects.get_or_create(data=data_obj, defaults={'eh_dia_letivo': False, 'ano_letivo': ano_corrente})
+            
+            if 'alternar' in request.POST:
+                if not created:
+                    dia.eh_dia_letivo = not dia.eh_dia_letivo
+                else:
+                    dia.eh_dia_letivo = True
+            
+            if 'observacao' in request.POST:
+                dia.observacao = request.POST.get('observacao')
+                
+            dia.save()
+            return redirect(f"/escola/?ano={data_obj.year}&mes={data_obj.month}")
     return redirect('calendario')
 
 import os
@@ -300,6 +356,30 @@ def api_get_normas(request):
         
     dados = [{'id': n.id, 'codigo': n.codigo, 'descricao': n.descricao} for n in normas]
     return JsonResponse({'normas': dados})
+
+import json
+from django.views.decorators.http import require_POST
+from .services import sugerir_atividades_ia
+
+@require_POST
+def api_sugerir_atividades(request):
+    try:
+        data = json.loads(request.body)
+        turma_id = data.get('turma_id')
+        tema = data.get('tema')
+        normas_ids = data.get('normas_ids', [])
+        
+        turma = get_object_or_404(Turma, id=turma_id)
+        normas = NormaBNCC.objects.filter(id__in=normas_ids)
+        normas_texto = "\n".join([f"[{n.codigo}] {n.descricao}" for n in normas])
+        
+        if not tema or not normas_ids:
+            return JsonResponse({'sucesso': False, 'erro': 'Preencha o tema e selecione as habilidades.'})
+            
+        sugestoes = sugerir_atividades_ia(turma.nome, tema, normas_texto)
+        return JsonResponse({'sucesso': True, 'sugestoes': sugestoes})
+    except Exception as e:
+        return JsonResponse({'sucesso': False, 'erro': str(e)})
 
 def gerar_plano(request):
     if request.method == 'POST':
@@ -403,8 +483,9 @@ def planejamento_geral_gerar(request):
             messages.error(request, "Não há dias letivos cadastrados para este trimestre.")
             return redirect('planejamento_geral_config')
             
-        # Pega as normas da matéria para o trimestre
-        normas = NormaBNCC.objects.filter(materia=materia, trimestre=trimestre)
+        # Pega as normas da matéria para o trimestre (ou normas gerais sem trimestre)
+        from django.db.models import Q
+        normas = NormaBNCC.objects.filter(Q(trimestre=trimestre) | Q(trimestre__isnull=True), materia=materia)
         if not normas.exists():
             messages.error(request, "Não há normas da BNCC cadastradas para esta matéria no trimestre selecionado.")
             return redirect('planejamento_geral_config')
@@ -451,11 +532,13 @@ def planejamento_geral_salvar(request):
         
         dias_ids = request.POST.getlist('dia_id[]')
         temas = request.POST.getlist('tema[]')
+        sugestoes_lista = request.POST.getlist('sugestoes[]')
         
         # Limpa o planejamento anterior para essa mesma turma, materia e dia
         # Ou faz update. Vamos usar update_or_create
         for i, dia_id in enumerate(dias_ids):
             tema = temas[i] if i < len(temas) else ''
+            sugestao = sugestoes_lista[i] if i < len(sugestoes_lista) else ''
             
             aula, created = AulaPlanejamentoGeral.objects.update_or_create(
                 turma_id=turma_id,
@@ -463,7 +546,8 @@ def planejamento_geral_salvar(request):
                 dia_letivo_id=dia_id,
                 defaults={
                     'trimestre_id': trimestre_id,
-                    'tema_aula': tema
+                    'tema_aula': tema,
+                    'sugestoes_atividades': sugestao
                 }
             )
             # Salvar normas (ManyToMany)

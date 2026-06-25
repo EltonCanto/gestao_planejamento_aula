@@ -95,11 +95,22 @@
                                 Sem Aula
                             {% endif %}
                         </div>
-                        <form method="POST" action="{% url 'toggle_dia_letivo' dia.data|date:'Y-m-d' %}" class="toggle-form">
+                        {% if dia.observacao %}
+                            <div style="font-size: 0.8rem; color: #d9534f; margin-top: 5px; font-weight: bold; line-height: 1.2;">
+                                {{ dia.observacao }}
+                            </div>
+                        {% endif %}
+                        <form method="POST" action="{% url 'toggle_dia_letivo' dia.data|date:'Y-m-d' %}" class="toggle-form" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">
-                                Alternar
-                            </button>
+                            <input type="text" name="observacao" value="{{ dia.observacao|default:'' }}" placeholder="Obs / Feriado" style="width: 100%; font-size: 0.75rem; padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                            <div style="display: flex; gap: 4px;">
+                                <button type="submit" name="alternar" class="btn btn-secondary" style="flex: 1; padding: 0.2rem; font-size: 0.75rem;" title="Alternar status do dia">
+                                    Alternar
+                                </button>
+                                <button type="submit" name="salvar_obs" class="btn btn-primary" style="flex: 1; padding: 0.2rem; font-size: 0.75rem;" title="Salvar apenas a observação">
+                                    Salvar
+                                </button>
+                            </div>
                         </form>
                     </div>
                 {% else %}
