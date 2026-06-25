@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Plano de Aula - {{ turma }}</title>
+    <style>
+        /* Base Reset */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: white; /* Default to white for PDF generation */
+            font-family: Arial, Helvetica, sans-serif;
+            color: black;
+        }
+
+        /* Document A4 Styles */
+        .a4-document {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm; /* A4 standard margins */
+            box-sizing: border-box;
+            
+            /* Layout structural setup */
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto; /* Center on screen if viewed directly */
+        }
+
+        /* Document Template Formatting */
+        .doc-header {
+            display: flex;
+            border: 1px solid black;
+            border-bottom: none;
+            align-items: center;
+        }
+
+        .doc-logo {
+            width: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            border-right: 1px solid black;
+            align-self: stretch;
+        }
+
+        .doc-logo img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        .doc-header-info {
+            flex: 1;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .doc-header-info p {
+            font-size: 11pt;
+            line-height: 1.2;
+            margin: 1px 0;
+        }
+
+        .doc-title {
+            border: 1px solid black;
+            border-bottom: 1px solid black; /* ensure strong separation */
+            text-align: center;
+            padding: 4px;
+            background-color: #f2f2f2; /* subtle gray as in some docs, or keep white */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .doc-title h2 {
+            font-size: 14pt;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .doc-row {
+            display: flex;
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black; /* inner borders */
+            page-break-inside: avoid; /* Useful for PDF generators */
+        }
+
+        .doc-row-3-cols > .doc-cell:nth-child(1) { width: 20%; border-right: 1px solid black; }
+        .doc-row-3-cols > .doc-cell:nth-child(2) { width: 20%; border-right: 1px solid black; }
+        .doc-row-3-cols > .doc-cell:nth-child(3) { width: 60%; }
+
+        .doc-row-2-cols > .doc-cell:nth-child(1) { width: 50%; border-right: 1px solid black; }
+        .doc-row-2-cols > .doc-cell:nth-child(2) { width: 50%; }
+
+        .doc-cell {
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .doc-cell strong {
+            font-size: 11pt;
+            text-transform: uppercase;
+        }
+
+        .cell-content {
+            font-size: 11pt;
+            margin-top: 4px;
+            word-break: break-word;
+            white-space: pre-wrap; /* preserve newlines */
+        }
+
+        .flex-grow {
+            flex-grow: 1;
+        }
+
+        /* Fixed block heights */
+        .doc-row.doc-row-3-cols { min-height: 40px; }
+        .doc-row:nth-of-type(3) { height: 200px; } /* Objeto do Conhecimento */
+        .doc-row:nth-of-type(4) { height: 250px; } /* Habilidades */
+        .doc-row:nth-of-type(5) { height: 230px; } /* Objetivos */
+        .doc-row:nth-of-type(6) { height: 170px; } /* Recursos/Avaliacao */
+
+        .no-print {
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        .btn {
+            background-color: #2e6ff2;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 10px;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        /* Print Styles - guarantees perfect A4 generation */
+        @media print {
+            .no-print { display: none !important; }
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body {
+                margin: 0;
+            }
+            .a4-document {
+                width: 210mm;
+                height: 297mm;
+                padding: 10mm;
+                margin: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <a href="{% url 'configurar_plano' %}" class="btn btn-secondary">← Voltar e Gerar Novo</a>
+        <button onclick="window.print()" class="btn">Imprimir / Salvar PDF 🖨️</button>
+    </div>
+    
+    <div class="a4-document">
+        
+        <!-- Header -->
+        <header class="doc-header">
+            <div class="doc-logo">
+                <!-- Se estiver usando os arquivos estáticos do Django, você pode usar:
+                     <img src="{% static 'images/logo.png' %}" alt="Brasão de Teresópolis"> -->
+                <img src="{{ logo_url|default:'logo.png' }}" alt="Brasão de Teresópolis">
+            </div>
+            <div class="doc-header-info">
+                <p>Estado do Rio de Janeiro</p>
+                <p>Prefeitura Municipal de Teresópolis</p>
+                <p>Secretaria Municipal de Educação</p>
+                <p>Escola Municipal José Alves Ferreira</p>
+                <p>Estrada João Adolpho Tayt-Sohn Snº — Santa Rosa</p>
+                <p>E-mail: em.josealvesferreira@edu.teresopolis.rj.gov.br</p>
+            </div>
+        </header>
+
+        <!-- Document Title -->
+        <div class="doc-title">
+            <h2>PLANO DE AULA</h2>
+        </div>
+
+        <!-- Row 1: Data, Turma, Componente -->
+        <div class="doc-row doc-row-3-cols">
+            <div class="doc-cell">
+                <strong>DATA:</strong>
+                <div class="cell-content">{{ data|default:"--/--/----" }}</div>
+            </div>
+            <div class="doc-cell">
+                <strong>TURMA:</strong>
+                <div class="cell-content">{{ turma }}</div>
+            </div>
+            <div class="doc-cell col-span-larger">
+                <strong>COMPONENTE CURRICULAR:</strong>
+                <div class="cell-content">{{ componente }}</div>
+            </div>
+        </div>
+
+        <!-- Row 2: Objeto do Conhecimento -->
+        <div class="doc-row">
+            <div class="doc-cell">
+                <strong>OBJETO DO CONHECIMENTO:</strong>
+                <div class="cell-content multi-line">{{ objeto|linebreaksbr }}</div>
+            </div>
+        </div>
+
+        <!-- Row 3: Habilidades na BNCC -->
+        <div class="doc-row">
+            <div class="doc-cell">
+                <strong>HABILIDADES NA BNCC:</strong>
+                <div class="cell-content multi-line">{{ habilidades|linebreaksbr }}</div>
+            </div>
+        </div>
+
+        <!-- Row 4: Objetivos Específicos -->
+        <div class="doc-row">
+            <div class="doc-cell">
+                <strong>OBJETIVOS ESPECÍFICOS:</strong>
+                <div class="cell-content multi-line">{{ objetivos|linebreaksbr }}</div>
+            </div>
+        </div>
+
+        <!-- Row 5: Recursos e Avaliação -->
+        <div class="doc-row doc-row-2-cols flex-grow">
+            <div class="doc-cell w-50">
+                <strong>RECURSOS:</strong>
+                <div class="cell-content multi-line">{{ recursos|linebreaksbr }}</div>
+            </div>
+            <div class="doc-cell w-50">
+                <strong>AVALIAÇÃO:</strong>
+                <div class="cell-content multi-line">{{ avaliacao|linebreaksbr }}</div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

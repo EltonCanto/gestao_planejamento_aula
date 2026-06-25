@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Revisar Planejamento | EduGestão{% endblock %}
+{% block page_title %}Revisar Planejamento Geral{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px;">
+    <h2>Revisão da Distribuição</h2>
+    <p class="text-muted">Revise os temas e as normas sugeridas para cada dia letivo. Você pode editar o tema e marcar/desmarcar habilidades livremente.</p>
+
+    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+        <strong>Turma:</strong> {{ turma.nome }} <br>
+        <strong>Componente:</strong> {{ materia.nome }} <br>
+        <strong>Período:</strong> {{ trimestre.nome }}
+    </div>
+
+    <form action="{% url 'planejamento_geral_salvar' %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="turma_id" value="{{ turma.id }}">
+        <input type="hidden" name="materia_id" value="{{ materia.id }}">
+        <input type="hidden" name="trimestre_id" value="{{ trimestre.id }}">
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 10px; text-align: left; width: 15%;">Data</th>
+                    <th style="padding: 10px; text-align: left; width: 35%;">Tema da Aula</th>
+                    <th style="padding: 10px; text-align: left; width: 50%;">Habilidades (BNCC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in plano_revisao %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 15px 10px; vertical-align: top;">
+                        <strong>{{ item.dia.data|date:"d/m/Y" }}</strong>
+                        <input type="hidden" name="dia_id[]" value="{{ item.dia.id }}">
+                    </td>
+                    <td style="padding: 15px 10px; vertical-align: top;">
+                        <input type="text" name="tema[]" value="{{ item.tema }}" style="width: 100%;" placeholder="Descreva o tema da aula">
+                    </td>
+                    <td style="padding: 15px 10px; vertical-align: top;">
+                        <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: white;">
+                            {% for norma in todas_normas %}
+                            <label style="display: flex; gap: 8px; margin-bottom: 5px; align-items: flex-start; font-size: 0.9rem; font-weight: normal;">
+                                <input type="checkbox" name="normas_dia_{{ item.dia.id }}" value="{{ norma.id }}" 
+                                    {% if norma in item.normas %}checked{% endif %}>
+                                <span><strong>{{ norma.codigo }}</strong>: {{ norma.descricao|truncatewords:15 }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="{% url 'planejamento_geral_config' %}" class="btn btn-secondary" style="background-color: #6c757d; text-decoration: none; text-align: center; flex: 1;">Voltar</a>
+            <button type="submit" class="btn" style="flex: 2;">Salvar Planejamento do Trimestre 💾</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

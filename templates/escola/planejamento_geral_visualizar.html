@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizar Planejamento | EduGestão{% endblock %}
+{% block page_title %}Planejamento Geral Consolidado{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2>Plano de Ensino do Trimestre</h2>
+            <p class="text-muted">Visão consolidada da distribuição de conteúdos e habilidades.</p>
+        </div>
+        <button onclick="window.print()" class="btn" style="background-color: #28a745;">Imprimir / PDF 🖨️</button>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius); 
+                {% if message.tags == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                {% else %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div style="background: var(--bg-color); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 2rem;">
+        <h3 style="margin-top: 0;">Resumo da Turma</h3>
+        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 0;">
+            <li style="margin-bottom: 0.5rem;"><strong>Turma:</strong> {{ turma.nome }} - {{ turma.ano }}</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Componente Curricular:</strong> {{ materia.nome }}</li>
+            <li><strong>Trimestre:</strong> {{ trimestre.nome }}</li>
+        </ul>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; border: 1px solid var(--border-color);">
+        <thead>
+            <tr style="background-color: var(--bg-color); border-bottom: 2px solid var(--border-color);">
+                <th style="padding: 12px; text-align: left; width: 15%;">Data</th>
+                <th style="padding: 12px; text-align: left; width: 35%;">Tema Previsto</th>
+                <th style="padding: 12px; text-align: left; width: 50%;">Competências / Habilidades (BNCC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aula in aulas %}
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 12px; vertical-align: top;">
+                    <strong>{{ aula.dia_letivo.data|date:"d/m/Y" }}</strong>
+                </td>
+                <td style="padding: 12px; vertical-align: top;">
+                    {{ aula.tema_aula|default:"-" }}
+                </td>
+                <td style="padding: 12px; vertical-align: top;">
+                    {% if aula.normas.all %}
+                        <ul style="margin: 0; padding-left: 20px;">
+                            {% for norma in aula.normas.all %}
+                                <li><strong>{{ norma.codigo }}:</strong> {{ norma.descricao|truncatewords:20 }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span class="text-muted">Nenhuma habilidade selecionada.</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="padding: 2rem; text-align: center; color: #666;">
+                    Nenhuma aula planejada para este trimestre ainda.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'planejamento_geral_config' %}" class="btn">Nova Distribuição</a>
+    </div>
+</div>
+
+<style>
+@media print {
+    .sidebar, header, .btn {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: none !important;
+    }
+}
+</style>
+{% endblock %}

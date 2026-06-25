@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Configurar Plano de Aula | EduGestão{% endblock %}
+{% block page_title %}Geração de Plano de Aula com IA{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px;">
+    <h2>1. Selecione os Parâmetros</h2>
+    <p class="text-muted">Preencha os campos abaixo para que a IA gere um plano de aula completo usando a BNCC.</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius); 
+                {% if message.tags == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                {% else %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form action="{% url 'gerar_plano' %}" method="POST">
+        {% csrf_token %}
+        
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="turma">Turma:</label>
+                <select name="turma" id="turma" required>
+                    <option value="">-- Escolha --</option>
+                    {% for turma in turmas %}
+                        <option value="{{ turma.id }}">{{ turma.nome }} - {{ turma.ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <label for="dia_letivo">Data da Aula:</label>
+                <select name="dia_letivo" id="dia_letivo" required>
+                    <option value="">-- Escolha --</option>
+                    {% for dia in dias %}
+                        <option value="{{ dia.id }}">{{ dia.data|date:"d/m/Y" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="trimestre">Trimestre (Opcional):</label>
+                <select name="trimestre" id="trimestre" onchange="fetchNormas()">
+                    <option value="">Todos</option>
+                    {% for trim in trimestres %}
+                        <option value="{{ trim.id }}">{{ trim.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 200px;">
+                <label for="materia">Componente Curricular:</label>
+                <select name="materia" id="materia" onchange="fetchNormas()" required>
+                    <option value="">-- Escolha --</option>
+                    {% for mat in materias %}
+                        <option value="{{ mat.id }}">{{ mat.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div id="normas_container" style="margin-top: 1.5rem; display: none;">
+            <h3>2. Selecione as Habilidades (BNCC)</h3>
+            <p class="text-muted">Abaixo estão as habilidades cadastradas para esta matéria. Selecione as que deseja incluir na aula.</p>
+            <div id="normas_list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--border-radius); background: var(--bg-color);">
+                <!-- Habilidades serão injetadas aqui via JS -->
+            </div>
+        </div>
+
+        <button type="submit" class="btn" style="margin-top: 2rem; width: 100%;">
+            Gerar Plano com Inteligência Artificial ✨
+        </button>
+    </form>
+</div>
+
+<script>
+async function fetchNormas() {
+    const materiaId = document.getElementById('materia').value;
+    const trimestreId = document.getElementById('trimestre').value;
+    const container = document.getElementById('normas_container');
+    const list = document.getElementById('normas_list');
+
+    if (!materiaId) {
+        container.style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/escola/api/normas/?materia_id=${materiaId}&trimestre_id=${trimestreId}`);
+        const data = await response.json();
+        
+        list.innerHTML = '';
+        
+        if (data.normas.length === 0) {
+            list.innerHTML = '<p class="text-muted">Nenhuma norma encontrada para estes filtros.</p>';
+        } else {
+            data.normas.forEach(norma => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '0.5rem';
+                div.innerHTML = `
+                    <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-weight: normal;">
+                        <input type="checkbox" name="normas" value="${norma.id}" checked>
+                        <span><strong>${norma.codigo}</strong>: ${norma.descricao}</span>
+                    </label>
+                `;
+                list.appendChild(div);
+            });
+        }
+        
+        container.style.display = 'block';
+    } catch (error) {
+        console.error("Erro ao buscar normas:", error);
+    }
+}
+</script>
+{% endblock %}

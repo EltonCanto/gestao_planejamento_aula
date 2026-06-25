@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Plano de Aula | EduGestão{% endblock %}
+{% block page_title %}Revisar Plano Gerado{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px;">
+    <h2>Revisão e Edição do Plano de Aula</h2>
+    <p class="text-muted">A Inteligência Artificial gerou uma sugestão de plano. Você pode editar os campos livremente antes de salvar no banco de dados.</p>
+
+    <form action="{% url 'salvar_plano' %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="turma_id" value="{{ turma.id }}">
+        <input type="hidden" name="materia_id" value="{{ materia.id }}">
+        <input type="hidden" name="dia_id" value="{{ dia_letivo.id }}">
+
+        <div style="margin-top: 1rem;">
+            <strong>Turma:</strong> {{ turma.nome }} - {{ turma.ano }} <br>
+            <strong>Componente Curricular:</strong> {{ materia.nome }} <br>
+            <strong>Data da Aula:</strong> {{ dia_letivo.data|date:"d/m/Y" }}
+        </div>
+
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-color);">
+
+        <label for="objeto_conhecimento">Objeto do Conhecimento:</label>
+        <textarea name="objeto_conhecimento" id="objeto_conhecimento" rows="3" required>{{ plano.objeto_conhecimento }}</textarea>
+
+        <label for="habilidades_bncc">Habilidades na BNCC:</label>
+        <textarea name="habilidades_bncc" id="habilidades_bncc" rows="4" required>{{ plano.habilidades_bncc }}</textarea>
+
+        <label for="objetivos_especificos">Objetivos Específicos:</label>
+        <textarea name="objetivos_especificos" id="objetivos_especificos" rows="4" required>{{ plano.objetivos_especificos }}</textarea>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <label for="recursos">Recursos:</label>
+                <textarea name="recursos" id="recursos" rows="4" required>{{ plano.recursos }}</textarea>
+            </div>
+            <div style="flex: 1; min-width: 300px;">
+                <label for="avaliacao">Avaliação:</label>
+                <textarea name="avaliacao" id="avaliacao" rows="4" required>{{ plano.avaliacao }}</textarea>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="{% url 'configurar_plano' %}" class="btn" style="background-color: #6c757d; text-decoration: none; text-align: center; flex: 1;">Cancelar</a>
+            <button type="submit" class="btn" style="flex: 2;">Confirmar e Salvar no Banco 💾</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

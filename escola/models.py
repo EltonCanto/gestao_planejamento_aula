@@ -82,3 +82,39 @@ class NormaBNCC(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.materia.nome}"
+
+class PlanoAula(models.Model):
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='planos')
+    materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='planos')
+    dia_letivo = models.ForeignKey(DiaLetivo, on_delete=models.CASCADE, related_name='planos')
+    
+    objeto_conhecimento = models.TextField(blank=True)
+    habilidades_bncc = models.TextField(blank=True)
+    objetivos_especificos = models.TextField(blank=True)
+    recursos = models.TextField(blank=True)
+    avaliacao = models.TextField(blank=True)
+    
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['turma', 'materia', 'dia_letivo']
+
+    def __str__(self):
+        return f"Plano: {self.turma.nome} - {self.materia.nome} ({self.dia_letivo.data.strftime('%d/%m/%Y')})"
+
+class AulaPlanejamentoGeral(models.Model):
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='aulas_gerais')
+    materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='aulas_gerais')
+    trimestre = models.ForeignKey(Trimestre, on_delete=models.CASCADE, related_name='aulas_gerais')
+    dia_letivo = models.ForeignKey(DiaLetivo, on_delete=models.CASCADE, related_name='aulas_gerais')
+    
+    tema_aula = models.CharField(max_length=255, blank=True)
+    normas = models.ManyToManyField(NormaBNCC, blank=True)
+    
+    class Meta:
+        unique_together = ['turma', 'materia', 'dia_letivo']
+        ordering = ['dia_letivo__data']
+
+    def __str__(self):
+        return f"Aula: {self.turma.nome} - {self.materia.nome} em {self.dia_letivo.data.strftime('%d/%m/%Y')}"
