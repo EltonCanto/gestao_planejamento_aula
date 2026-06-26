@@ -34,14 +34,21 @@
                     <td style="padding: 15px 10px; vertical-align: top;">
                         <strong>{{ item.dia.data|date:"d/m/Y" }}</strong><br>
                         <span style="font-size: 0.85rem; color: #666;">{{ item.dia.data|date:"l" }}</span>
+                        
+                        {% if item.norma_principal %}
+                        <div style="margin-top: 10px; padding: 5px; background: #e9ecef; border-radius: 4px; border-left: 3px solid #007bff;">
+                            <span style="font-size: 0.8rem; font-weight: bold; color: #007bff;">Foco Principal:</span><br>
+                            <span style="font-size: 0.85rem; font-weight: bold;">{{ item.norma_principal }}</span>
+                        </div>
+                        {% endif %}
                         <input type="hidden" name="dia_id[]" value="{{ item.dia.id }}">
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top;">
                         <textarea name="tema[]" id="tema_{{ item.dia.id }}" rows="2" style="width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 5px;" placeholder="Descreva o tema da aula">{{ item.tema }}</textarea>
                         
                         <div style="margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 8px;">
-                            <textarea name="sugestoes[]" id="sugestoes_{{ item.dia.id }}" rows="3" style="width: 100%; box-sizing: border-box; margin-bottom: 5px; padding: 5px; font-size: 0.85rem; background: #fafafa;" placeholder="Sugestões de atividades..."></textarea>
-                            <button type="button" class="btn btn-secondary btn-sugerir" data-dia-id="{{ item.dia.id }}" style="font-size: 0.8rem; padding: 4px 8px; width: 100%; background: #17a2b8;">💡 Sugerir Atividades com IA</button>
+                            <textarea name="sugestoes[]" id="sugestoes_{{ item.dia.id }}" rows="4" style="width: 100%; box-sizing: border-box; margin-bottom: 5px; padding: 5px; font-size: 0.85rem; background: #fafafa;" placeholder="Sugestões de atividades...">{{ item.sugestao }}</textarea>
+                            <button type="button" class="btn btn-secondary btn-sugerir" data-dia-id="{{ item.dia.id }}" style="font-size: 0.8rem; padding: 4px 8px; width: 100%; background: #17a2b8;">💡 Gerar nova sugestão de Atividades com IA</button>
                         </div>
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top;">

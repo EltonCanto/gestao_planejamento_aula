@@ -10,7 +10,16 @@
             <h2>Plano de Ensino do Trimestre</h2>
             <p class="text-muted">Visão consolidada da distribuição de conteúdos e habilidades.</p>
         </div>
-        <button onclick="window.print()" class="btn" style="background-color: #28a745;">Imprimir / PDF 🖨️</button>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="window.print()" class="btn" style="background-color: #28a745;">Imprimir / PDF 🖨️</button>
+            <form action="{% url 'planejamento_geral_excluir' %}" method="POST" style="margin: 0;" onsubmit="return confirm('Tem certeza que deseja excluir todo este planejamento? Isso liberará a matéria para ser planejada novamente.')">
+                {% csrf_token %}
+                <input type="hidden" name="turma_id" value="{{ turma.id }}">
+                <input type="hidden" name="materia_id" value="{{ materia.id }}">
+                <input type="hidden" name="trimestre_id" value="{{ trimestre.id }}">
+                <button type="submit" class="btn" style="background-color: #dc3545;">Excluir Planejamento 🗑️</button>
+            </form>
+        </div>
     </div>
 
     {% if messages %}

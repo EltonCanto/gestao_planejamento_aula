@@ -449,8 +449,8 @@ def visualizar_plano(request, plano_id):
         'avaliacao': plano.avaliacao,
     })
 
-from .models import AulaPlanejamentoGeral
-from .services import distribuir_normas_ia
+from .models import AulaPlanejamentoGeral, DistribuicaoMateria
+from .services import distribuir_normas_homogeneamente
 
 def planejamento_geral_config(request):
     turmas = Turma.objects.all()
@@ -472,15 +472,55 @@ def planejamento_geral_gerar(request):
         materia = get_object_or_404(Materia, id=materia_id)
         trimestre = get_object_or_404(Trimestre, id=trimestre_id)
         
+        # Checar se já existe planejamento salvo
+        if AulaPlanejamentoGeral.objects.filter(turma=turma, materia=materia, trimestre=trimestre).exists():
+            messages.warning(request, "Já existe um planejamento salvo para esta Turma, Matéria e Trimestre. Para gerar um novo, exclua o atual.")
+            return redirect('planejamento_geral_visualizar', turma_id=turma.id, materia_id=materia.id, trimestre_id=trimestre.id)
+
         # Pega dias letivos no trimestre
-        dias = DiaLetivo.objects.filter(
+        dias_qs = DiaLetivo.objects.filter(
             eh_dia_letivo=True,
             data__gte=trimestre.data_inicial,
             data__lte=trimestre.data_final
         ).order_by('data')
         
-        if not dias.exists():
-            messages.error(request, "Não há dias letivos cadastrados para este trimestre.")
+        distribuicao = DistribuicaoMateria.objects.filter(turma=turma, materia=materia).first()
+        dias = list(dias_qs)
+        
+        if distribuicao:
+            if distribuicao.frequencia == 'FIXO':
+                dias = [d for d in dias if d.data.weekday() == distribuicao.dia_semana]
+            elif distribuicao.frequencia == 'RODIZIO':
+                rodizio_deste_dia = DistribuicaoMateria.objects.filter(
+                    turma=turma, 
+                    frequencia='RODIZIO', 
+                    dia_semana=distribuicao.dia_semana
+                ).order_by('ordem_rodizio', 'materia__nome')
+                
+                materias_rodizio = list(rodizio_deste_dia.values_list('materia_id', flat=True))
+                
+                if materia.id in materias_rodizio:
+                    idx_materia = materias_rodizio.index(materia.id)
+                    total_rodizio = len(materias_rodizio)
+                    
+                    if dias_qs.exists():
+                        ano_corrente = dias_qs.first().ano_letivo
+                        todos_dias_rodizio = DiaLetivo.objects.filter(
+                            eh_dia_letivo=True,
+                            ano_letivo=ano_corrente
+                        ).order_by('data')
+                        
+                        todos_dias_rodizio = [d for d in todos_dias_rodizio if d.data.weekday() == distribuicao.dia_semana]
+                        
+                        dias_da_materia = []
+                        for i, d in enumerate(todos_dias_rodizio):
+                            if (i % total_rodizio) == idx_materia:
+                                dias_da_materia.append(d.id)
+                                
+                        dias = [d for d in dias if d.id in dias_da_materia]
+        
+        if not dias:
+            messages.error(request, "Não há dias letivos cadastrados ou disponíveis para esta matéria neste trimestre, de acordo com a Grade Curricular.")
             return redirect('planejamento_geral_config')
             
         # Pega as normas da matéria para o trimestre (ou normas gerais sem trimestre)
@@ -490,23 +530,23 @@ def planejamento_geral_gerar(request):
             messages.error(request, "Não há normas da BNCC cadastradas para esta matéria no trimestre selecionado.")
             return redirect('planejamento_geral_config')
             
-        dias_texto = "\n".join([str(d.data) for d in dias])
-        normas_texto = "\n".join([f"[{n.codigo}] {n.descricao}" for n in normas])
-        
         try:
-            distribuicao = distribuir_normas_ia(dias_texto, normas_texto)
-            # distribuicao é uma lista de dicts: [{'data': '...', 'tema': '...', 'normas_codigos': ['...']}]
+            from .services import distribuir_normas_homogeneamente
+            distribuicao = distribuir_normas_homogeneamente(dias, list(normas))
             
             # Formatar para a tela de revisão
             plano_revisao = []
             for d in distribuicao:
-                dia_obj = dias.filter(data=d.get('data')).first()
+                dia_obj = next((dia for dia in dias if str(dia.data) == str(d.get('data'))), None)
                 if dia_obj:
                     codigos = d.get('normas_codigos', [])
+                    norma_principal = codigos[0] if codigos else None
                     normas_objs = normas.filter(codigo__in=codigos)
                     plano_revisao.append({
                         'dia': dia_obj,
                         'tema': d.get('tema', ''),
+                        'sugestao': d.get('sugestao', ''),
+                        'norma_principal': norma_principal,
                         'normas': normas_objs
                     })
             
@@ -580,3 +620,22 @@ def planejamento_geral_visualizar(request, turma_id, materia_id, trimestre_id):
         'trimestre': trimestre,
         'aulas': aulas
     })
+
+def planejamento_geral_excluir(request):
+    if request.method == 'POST':
+        turma_id = request.POST.get('turma_id')
+        materia_id = request.POST.get('materia_id')
+        trimestre_id = request.POST.get('trimestre_id')
+        
+        # Apaga todos os registros dessa tríade
+        apagados, _ = AulaPlanejamentoGeral.objects.filter(
+            turma_id=turma_id,
+            materia_id=materia_id,
+            trimestre_id=trimestre_id
+        ).delete()
+        
+        from django.contrib import messages
+        messages.success(request, f"Planejamento excluído com sucesso! Você pode agora gerar um novo.")
+        return redirect('planejamento_geral_config')
+    
+    return redirect('planejamento_geral_config')

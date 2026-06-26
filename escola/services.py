@@ -133,10 +133,32 @@ Retorne apenas o JSON. Use quebras de linha (\\n) dentro das strings se quiser f
         print(f"Erro na geração do plano via IA: {e}")
         raise Exception(f"Falha na IA ao gerar plano: {str(e)}")
 
-def distribuir_normas_ia(dias_texto, normas_texto):
+def distribuir_normas_homogeneamente(dias_lista, normas_lista):
     """
-    Usa a IA para distribuir as normas ao longo dos dias letivos disponíveis.
+    Distribui as normas homogeneamente (round-robin) nos dias e usa IA
+    apenas para criar os temas e sugestões baseados na norma alocada para cada dia.
+    dias_lista: lista de dicionários ou objetos com 'id' e 'data' (string)
+    normas_lista: lista de objetos com 'codigo' e 'descricao'
     """
+    if not normas_lista or not dias_lista:
+        return []
+
+    # 1. Distribuição programática (Round-Robin)
+    alocacao = []
+    total_normas = len(normas_lista)
+    
+    for i, dia in enumerate(dias_lista):
+        norma_idx = i % total_normas
+        norma_alocada = normas_lista[norma_idx]
+        
+        # O dicionário de alocação que vamos mandar pra IA
+        alocacao.append({
+            "dia_data": str(dia.data),
+            "norma_codigo": norma_alocada.codigo,
+            "norma_descricao": norma_alocada.descricao
+        })
+
+    # 2. Chama a IA para gerar os Temas e as Sugestões
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise Exception("API Key do OpenRouter não encontrada.")
@@ -145,48 +167,50 @@ def distribuir_normas_ia(dias_texto, normas_texto):
         openai_api_key=api_key,
         openai_api_base="https://openrouter.ai/api/v1",
         model_name="google/gemini-2.5-flash",
-        temperature=0.4
+        temperature=0.7
     )
 
+    alocacao_texto = json.dumps(alocacao, indent=2, ensure_ascii=False)
+
     template = """
-Você é um especialista em pedagogia encarregado de montar o Planejamento Geral de um trimestre.
-Abaixo eu forneço uma lista de dias letivos disponíveis e uma lista de normas (habilidades) da BNCC.
-Você deve alocar logicamente as habilidades ao longo desses dias letivos.
-Você não precisa colocar normas em TODOS os dias (você pode reservar dias para revisão ou avaliações, se achar prudente, ou distribuir uniformemente).
+Você é um especialista em pedagogia. 
+Abaixo está um JSON contendo uma lista de dias letivos e a habilidade da BNCC (código e descrição) que já foi alocada para aquele dia.
+Para cada dia, crie:
+1. Um "tema" curto e coerente para a aula, derivado diretamente da habilidade BNCC selecionada.
+2. Uma "sugestao" prática de atividade para a aula, baseada nesse tema e nessa habilidade.
 
-Retorne ESTRITAMENTE um array JSON com objetos. Cada objeto representa um dia e deve ter o formato:
-{{
-  "data": "YYYY-MM-DD",  // (Usando a exata string da data fornecida)
-  "tema": "Título ou tema da aula",
-  "normas_codigos": ["CODIGO1", "CODIGO2"] // Apenas os códigos das normas BNCC associadas
-}}
+Retorne ESTRITAMENTE um array JSON com objetos. Não escreva mais nada além do JSON.
+Formato de saída esperado:
+[
+  {{
+    "data": "A mesma data fornecida",
+    "tema": "Título curto do tema da aula",
+    "sugestao": "Sugestão de atividade prática",
+    "normas_codigos": ["O código da norma fornecido"]
+  }}
+]
 
-DIAS LETIVOS:
-{dias}
-
-NORMAS BNCC (Habilidades):
-{normas}
-
-Retorne apenas o JSON.
+DADOS DE ENTRADA:
+{alocacao}
 """
 
     prompt = PromptTemplate(
-        input_variables=["dias", "normas"],
+        input_variables=["alocacao"],
         template=template
     )
 
     chain = prompt | llm
     
     try:
-        resposta = chain.invoke({"dias": dias_texto, "normas": normas_texto})
+        resposta = chain.invoke({"alocacao": alocacao_texto})
         content = resposta.content
         content = re.sub(r'```json\s*', '', content)
         content = re.sub(r'```\s*', '', content)
         dados = json.loads(content)
         return dados
     except Exception as e:
-        print(f"Erro na geração do planejamento geral via IA: {e}")
-        raise Exception(f"Falha na IA ao distribuir normas: {str(e)}")
+        print(f"Erro na IA ao gerar temas e sugestões: {e}")
+        raise Exception(f"Falha na IA ao gerar planejamento: {str(e)}")
 
 def sugerir_atividades_ia(turma_nome, tema, normas_texto):
     """

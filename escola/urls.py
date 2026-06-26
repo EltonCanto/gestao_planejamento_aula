@@ -20,4 +20,5 @@ urlpatterns = [
     path('planejamento-geral/gerar/', views.planejamento_geral_gerar, name='planejamento_geral_gerar'),
     path('planejamento-geral/salvar/', views.planejamento_geral_salvar, name='planejamento_geral_salvar'),
     path('planejamento-geral/visualizar/<int:turma_id>/<int:materia_id>/<int:trimestre_id>/', views.planejamento_geral_visualizar, name='planejamento_geral_visualizar'),
+    path('planejamento-geral/excluir/', views.planejamento_geral_excluir, name='planejamento_geral_excluir'),
 ]

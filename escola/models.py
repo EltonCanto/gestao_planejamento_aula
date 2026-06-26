@@ -132,3 +132,31 @@ class AulaPlanejamentoGeral(models.Model):
 
     def __str__(self):
         return f"Aula: {self.turma.nome} - {self.materia.nome} em {self.dia_letivo.data.strftime('%d/%m/%Y')}"
+
+class DistribuicaoMateria(models.Model):
+    FREQUENCIA_CHOICES = (
+        ('TODOS', 'Todos os dias'),
+        ('FIXO', 'Dia Fixo'),
+        ('RODIZIO', 'Rodízio'),
+    )
+    DIA_SEMANA_CHOICES = (
+        (0, 'Segunda-feira'),
+        (1, 'Terça-feira'),
+        (2, 'Quarta-feira'),
+        (3, 'Quinta-feira'),
+        (4, 'Sexta-feira'),
+    )
+
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='distribuicoes')
+    materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='distribuicoes')
+    frequencia = models.CharField(max_length=10, choices=FREQUENCIA_CHOICES, default='TODOS')
+    dia_semana = models.IntegerField(choices=DIA_SEMANA_CHOICES, null=True, blank=True)
+    ordem_rodizio = models.IntegerField(default=1, help_text="Se for rodízio, defina a ordem (1, 2, 3...) entre as matérias que dividem o mesmo dia.")
+
+    class Meta:
+        unique_together = ['turma', 'materia']
+        verbose_name = 'Distribuição de Matéria'
+        verbose_name_plural = 'Distribuições de Matérias'
+
+    def __str__(self):
+        return f"{self.turma.nome} - {self.materia.nome} ({self.get_frequencia_display()})"

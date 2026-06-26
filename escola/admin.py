@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Escola, Trimestre, Turma, Professor, Aluno, TemaPeriodo, DiaLetivo, AnoLetivo
+from .models import Escola, Trimestre, Turma, Professor, Aluno, TemaPeriodo, DiaLetivo, AnoLetivo, Materia, DistribuicaoMateria
 
 admin.site.register(Escola)
 admin.site.register(Trimestre)
@@ -23,3 +23,14 @@ class DiaLetivoAdmin(admin.ModelAdmin):
     list_filter = ('eh_dia_letivo',)
     list_editable = ('eh_dia_letivo', 'observacao')
     ordering = ('data',)
+
+@admin.register(Materia)
+class MateriaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'tipo')
+    list_filter = ('tipo',)
+
+@admin.register(DistribuicaoMateria)
+class DistribuicaoMateriaAdmin(admin.ModelAdmin):
+    list_display = ('turma', 'materia', 'frequencia', 'dia_semana', 'ordem_rodizio')
+    list_filter = ('turma', 'frequencia', 'dia_semana')
+    ordering = ('turma', 'dia_semana', 'ordem_rodizio')
