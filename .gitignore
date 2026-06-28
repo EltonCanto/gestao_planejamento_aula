@@ -1,0 +1,23 @@
+# Ambientes virtuais
+venv/
+env/
+
+# Banco de dados
+db.sqlite3
+
+# Cache e compilados
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variáveis de ambiente e segredos
+.env
+token.json
+client_secret_*.json
+
+# Mídias e estáticos gerados
+media/
+staticfiles/
+
+# Logs
+*.log

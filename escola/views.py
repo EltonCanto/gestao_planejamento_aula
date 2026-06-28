@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
 from django.utils import timezone
 from .models import DiaLetivo, AnoLetivo, PlanoAula, AulaPlanejamentoGeral
@@ -9,6 +11,7 @@ from django.db.models import Count, Sum, Avg, Q, F
 from django.db.models.functions import TruncMonth
 from .models import Turma, Trimestre, Aluno, FrequenciaAluno, RegistroAulaTurma, PlanoDia, AtividadeDisciplina, NormaBNCC
 
+@login_required
 def dashboard(request):
     # Base Data for Filters
     anos = AnoLetivo.objects.all().order_by('-ano')
@@ -150,6 +153,7 @@ def dashboard(request):
 from django.http import JsonResponse
 from escola.services import gerar_resumo_dashboard_ia
 
+@login_required
 def api_dashboard_resumo_ia(request):
     try:
         # Pega os mesmos filtros da query string
@@ -221,7 +225,7 @@ Planejamentos (Professor):
     except Exception as e:
         return JsonResponse({'sucesso': False, 'erro': str(e)}, status=500)
 
-class CalendarioView(ListView):
+class CalendarioView(LoginRequiredMixin, ListView):
     model = DiaLetivo
     template_name = 'escola/calendario.html'
     context_object_name = 'dias'
@@ -371,6 +375,7 @@ def get_feriados(ano):
         
     return feriados
 
+@login_required
 def gerar_dias_letivos(request):
     if request.method == 'POST':
         data_inicial_str = request.POST.get('data_inicial')
@@ -427,6 +432,7 @@ def gerar_dias_letivos(request):
         
     return redirect('calendario')
 
+@login_required
 def confirmar_geracao_dias_letivos(request):
     dados = request.session.get('gerar_calendario_dados')
     if not dados:
@@ -441,6 +447,7 @@ def confirmar_geracao_dias_letivos(request):
         'dias_existentes': dias_existentes
     })
 
+@login_required
 def efetivar_geracao_dias_letivos(request):
     dados = request.session.get('gerar_calendario_dados')
     if not dados:
@@ -481,6 +488,7 @@ def efetivar_geracao_dias_letivos(request):
     messages.success(request, f"Calendário gerado! {dias_criados} dias letivos reais criados e {feriados_marcados} dias marcados como 'Sem Aula' (feriados).")
     return redirect(f"/escola/?ano={data_inicial.year}&mes={data_inicial.month}")
 
+@login_required
 def toggle_dia_letivo(request, data_str):
     if request.method == 'POST':
         # data_str formato: YYYY-MM-DD
@@ -513,6 +521,7 @@ from django.contrib import messages
 from .models import Materia, NormaBNCC, Trimestre
 from .services import processar_pdf_bncc
 
+@login_required
 def upload_bncc(request):
     trimestres = Trimestre.objects.all()
     if request.method == 'POST' and request.FILES.getlist('pdf_file'):
@@ -581,6 +590,7 @@ from .models import Turma, PlanoAula
 from django.shortcuts import get_object_or_404
 from .services import gerar_plano_com_ia
 
+@login_required
 def configurar_plano(request):
     turmas = Turma.objects.all()
     materias = Materia.objects.all()
@@ -593,6 +603,7 @@ def configurar_plano(request):
         'dias': dias
     })
 
+@login_required
 def api_get_normas(request):
     materia_id = request.GET.get('materia_id')
     trimestre_id = request.GET.get('trimestre_id')
@@ -611,6 +622,7 @@ from django.views.decorators.http import require_POST
 from .services import sugerir_atividades_ia
 
 @require_POST
+@login_required
 def api_sugerir_atividades(request):
     try:
         data = json.loads(request.body)
@@ -630,6 +642,7 @@ def api_sugerir_atividades(request):
     except Exception as e:
         return JsonResponse({'sucesso': False, 'erro': str(e)})
 
+@login_required
 def gerar_plano(request):
     if request.method == 'POST':
         turma_id = request.POST.get('turma')
@@ -662,6 +675,7 @@ def gerar_plano(request):
             
     return redirect('configurar_plano')
 
+@login_required
 def salvar_plano(request):
     if request.method == 'POST':
         turma_id = request.POST.get('turma_id')
@@ -685,6 +699,7 @@ def salvar_plano(request):
         
     return redirect('configurar_plano')
 
+@login_required
 def visualizar_plano(request, plano_id):
     plano = get_object_or_404(PlanoAula, id=plano_id)
     return render(request, 'escola/plano_aula.html', {
@@ -701,6 +716,7 @@ def visualizar_plano(request, plano_id):
 from .models import AulaPlanejamentoGeral, DistribuicaoMateria
 from .services import distribuir_normas_homogeneamente
 
+@login_required
 def planejamento_geral_config(request):
     turmas = Turma.objects.all()
     materias = Materia.objects.all()
@@ -711,6 +727,7 @@ def planejamento_geral_config(request):
         'trimestres': trimestres
     })
 
+@login_required
 def planejamento_geral_gerar(request):
     if request.method == 'POST':
         turma_id = request.POST.get('turma')
@@ -813,6 +830,7 @@ def planejamento_geral_gerar(request):
             
     return redirect('planejamento_geral_config')
 
+@login_required
 def planejamento_geral_salvar(request):
     if request.method == 'POST':
         turma_id = request.POST.get('turma_id')
@@ -852,6 +870,7 @@ def planejamento_geral_salvar(request):
         
     return redirect('planejamento_geral_config')
 
+@login_required
 def planejamento_geral_visualizar(request, turma_id, materia_id, trimestre_id):
     turma = get_object_or_404(Turma, id=turma_id)
     materia = get_object_or_404(Materia, id=materia_id)
@@ -870,6 +889,7 @@ def planejamento_geral_visualizar(request, turma_id, materia_id, trimestre_id):
         'aulas': aulas
     })
 
+@login_required
 def planejamento_geral_excluir(request):
     if request.method == 'POST':
         turma_id = request.POST.get('turma_id')
@@ -894,6 +914,7 @@ from .models import PlanoDia, AtividadeDisciplina, ArquivoAtividade
 from .google_drive import upload_arquivo
 from .services import extrair_texto_arquivo, resumir_arquivo_ia, gerar_plano_diario_completo_ia
 
+@login_required
 def plano_diario_abrir(request, turma_id, dia_id):
     turma = get_object_or_404(Turma, id=turma_id)
     dia = get_object_or_404(DiaLetivo, id=dia_id)
@@ -938,6 +959,7 @@ def plano_diario_abrir(request, turma_id, dia_id):
     return render(request, 'escola/plano_diario_edicao.html', context)
 
 @require_POST
+@login_required
 def plano_diario_excluir(request, plano_id):
     plano_dia = get_object_or_404(PlanoDia, id=plano_id)
     turma_id = plano_dia.turma_id
@@ -947,6 +969,7 @@ def plano_diario_excluir(request, plano_id):
     return redirect(f"/escola/?turma={turma_id}")
 
 @require_POST
+@login_required
 def api_upload_atividade(request):
     atividade_id = request.POST.get('atividade_id')
     arquivo = request.FILES.get('arquivo')
@@ -1017,6 +1040,7 @@ def api_upload_atividade(request):
         return JsonResponse({'sucesso': False, 'erro': str(e)})
 
 @require_POST
+@login_required
 def api_salvar_dinamica(request):
     try:
         data = json.loads(request.body)
@@ -1030,6 +1054,7 @@ def api_salvar_dinamica(request):
     except Exception as e:
         return JsonResponse({'sucesso': False, 'erro': str(e)})
 
+@login_required
 def plano_diario_gerar(request):
     if request.method == 'POST':
         plano_id = request.POST.get('plano_id')
@@ -1090,6 +1115,7 @@ def plano_diario_gerar(request):
         return redirect('plano_diario_abrir', turma_id=plano.turma.id, dia_id=plano.dia_letivo.id)
     return redirect('calendario')
 
+@login_required
 def plano_diario_salvar(request, plano_id=None):
     if request.method == 'POST':
         plano_id = plano_id or request.POST.get('plano_id')
@@ -1111,6 +1137,7 @@ def plano_diario_salvar(request, plano_id=None):
         messages.success(request, "Alterações salvas!")
         return redirect('plano_diario_abrir', turma_id=plano.turma.id, dia_id=plano.dia_letivo.id)
 
+@login_required
 def plano_diario_finalizar(request, plano_id=None):
     if request.method == 'POST':
         plano_id = plano_id or request.POST.get('plano_id')
@@ -1121,6 +1148,7 @@ def plano_diario_finalizar(request, plano_id=None):
         messages.success(request, "Plano de Aula Diário finalizado e bloqueado para edições!")
         return redirect('plano_diario_visualizar', plano_id=plano.id)
         
+@login_required
 def plano_diario_visualizar(request, plano_id):
     plano = get_object_or_404(PlanoDia, id=plano_id)
     try:
@@ -1131,6 +1159,7 @@ def plano_diario_visualizar(request, plano_id):
 
 import json
 
+@login_required
 def plano_diario_generico_novo(request, turma_id, dia_id):
     turma = get_object_or_404(Turma, id=turma_id)
     dia = get_object_or_404(DiaLetivo, id=dia_id)
@@ -1150,6 +1179,7 @@ def plano_diario_generico_novo(request, turma_id, dia_id):
     return render(request, 'escola/plano_diario_generico.html', context)
 
 @require_POST
+@login_required
 def plano_diario_generico_salvar(request):
     turma_id = request.POST.get('turma_id')
     dia_id = request.POST.get('dia_id')
@@ -1196,6 +1226,7 @@ from xhtml2pdf import pisa
 from .models import DocumentoPlanoAula
 from .google_drive import upload_pdf_em_memoria
 
+@login_required
 def gerar_plano_pdf(request, plano_id):
     plano = get_object_or_404(PlanoDia, id=plano_id)
     
@@ -1255,6 +1286,7 @@ def gerar_plano_pdf(request, plano_id):
 # --- Controle de Alunos ---
 from .models import RegistroAulaTurma, FrequenciaAluno, Aluno
 
+@login_required
 def controle_alunos_index(request):
     turmas = Turma.objects.all()
     # Pega os dias letivos recentes (últimos 30 dias até hoje + próximos 7 dias)
@@ -1270,6 +1302,7 @@ def controle_alunos_index(request):
         'hoje': hoje
     })
 
+@login_required
 def controle_alunos_chamada(request, turma_id, dia_letivo_id):
     turma = get_object_or_404(Turma, id=turma_id)
     dia = get_object_or_404(DiaLetivo, id=dia_letivo_id)
@@ -1355,6 +1388,7 @@ def controle_alunos_chamada(request, turma_id, dia_letivo_id):
 from .models import RelatorioTrimestralAluno
 from .services import gerar_relatorio_trimestral_ia
 
+@login_required
 def relatorio_index(request):
     turmas = Turma.objects.all()
     trimestres = Trimestre.objects.all()
@@ -1366,6 +1400,7 @@ def relatorio_index(request):
         
     return render(request, 'escola/relatorios_index.html', {'turmas': turmas, 'trimestres': trimestres})
 
+@login_required
 def relatorio_turma(request, turma_id, trimestre_id):
     turma = get_object_or_404(Turma, id=turma_id)
     trimestre = get_object_or_404(Trimestre, id=trimestre_id)
@@ -1387,6 +1422,7 @@ def relatorio_turma(request, turma_id, trimestre_id):
         'lista_alunos': lista_alunos
     })
 
+@login_required
 def relatorio_gerar_ia(request, aluno_id, trimestre_id):
     aluno = get_object_or_404(Aluno, id=aluno_id)
     trimestre = get_object_or_404(Trimestre, id=trimestre_id)
@@ -1467,6 +1503,7 @@ def relatorio_gerar_ia(request, aluno_id, trimestre_id):
         messages.error(request, str(e))
         return redirect('relatorio_turma', turma_id=turma.id, trimestre_id=trimestre.id)
 
+@login_required
 def relatorio_revisar(request, relatorio_id):
     relatorio = get_object_or_404(RelatorioTrimestralAluno, id=relatorio_id)
     turma = relatorio.aluno.turma
@@ -1496,6 +1533,7 @@ def relatorio_revisar(request, relatorio_id):
         
     return render(request, 'escola/relatorio_revisao.html', {'relatorio': relatorio, 'turma': turma, 'versoes': versoes})
 
+@login_required
 def relatorio_gerar_pdf(request, relatorio_id):
     relatorio = get_object_or_404(RelatorioTrimestralAluno, id=relatorio_id)
     turma = relatorio.aluno.turma

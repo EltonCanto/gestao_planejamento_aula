@@ -23,3 +23,7 @@ staticfiles/
 
 # Logs locais
 *.log
+
+# Credenciais do Google Drive (serão mapeadas via volume)
+token.json
+client_secret_*.json

@@ -14,6 +14,9 @@ services:
       - db_data:/app/db
       # Volume para arquivos gerados e upados não sumirem
       - media_data:/app/media
+      # Volumes para o Google Drive funcionar e o token persistir
+      - ./token.json:/app/token.json
+      - ./client_secret_515767878524-kidm2nv1qbc2rp4gcj6r52rghch7mojh.apps.googleusercontent.com.json:/app/client_secret_515767878524-kidm2nv1qbc2rp4gcj6r52rghch7mojh.apps.googleusercontent.com.json
     environment:
       # Informamos ao Django onde o SQLite deve ficar (dentro do volume montado /app/db/)
       - DATABASE_URL=sqlite:////app/db/db.sqlite3

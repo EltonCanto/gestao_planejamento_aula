@@ -36,6 +36,7 @@
             <h2>EduGestão</h2>
         </div>
         <ul class="sidebar-nav">
+            {% if user.is_authenticated %}
             <li><a href="/">Dashboard</a></li>
             <li><a href="/escola/">Calendário Letivo</a></li>
             <li><a href="{% url 'upload_bncc' %}">Ingestão BNCC</a></li>
@@ -43,6 +44,9 @@
 
             <li><a href="{% url 'controle_alunos_index' %}">Controle de Alunos</a></li>
             <li><a href="/relatorios/">Relatórios Trimestrais</a></li>
+            {% else %}
+            <li><a href="{% url 'login' %}">Login</a></li>
+            {% endif %}
         </ul>
     </nav>
 
@@ -52,8 +56,16 @@
                 <button id="sidebarToggle" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-color); cursor: pointer;" title="Ocultar/Mostrar Menu">☰</button>
                 <h1>{% block page_title %}Dashboard{% endblock %}</h1>
             </div>
-            <div class="user-info">
-                <span>Bem-vindo, Professor</span>
+            <div class="user-info" style="display: flex; align-items: center; gap: 1rem;">
+                {% if user.is_authenticated %}
+                <span>Bem-vindo, {{ user.username|title|default:'Professor' }}</span>
+                <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; font-weight: 500; font-family: inherit;">Sair</button>
+                </form>
+                {% else %}
+                <span>Visitante</span>
+                {% endif %}
             </div>
         </header>
 
