@@ -32,7 +32,7 @@ RUN mkdir -p /app/staticfiles /app/media /app/db \
     && chmod -R 777 /app/media /app/staticfiles /app/db
 
 # Cria um usuário não privilegiado para rodar a aplicação por segurança (best practice)
-RUN adduser --disabled-password --no-create-home appuser \
+RUN adduser --disabled-password appuser \
     && chown -R appuser:appuser /app
 
 # Troca para o usuário criado
