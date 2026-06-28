@@ -30,6 +30,12 @@
     </style>
 </head>
 <body>
+    <script>
+        // Previne o flicker aplicando o estado antes de renderizar o resto da página
+        if (localStorage.getItem('sidebarState') === 'hidden') {
+            document.body.classList.add('sidebar-hidden-init');
+        }
+    </script>
     
     <nav class="sidebar">
         <div class="sidebar-header">
@@ -78,9 +84,25 @@
     {% block extra_js %}{% endblock %}
     
     <script>
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        
+        // Inicializa o estado baseado na classe adicionada no body
+        if (document.body.classList.contains('sidebar-hidden-init')) {
+            sidebar.classList.add('hidden');
+            mainContent.classList.add('expanded');
+            document.body.classList.remove('sidebar-hidden-init');
+        }
+
         document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('hidden');
-            document.querySelector('.main-content').classList.toggle('expanded');
+            sidebar.classList.toggle('hidden');
+            mainContent.classList.toggle('expanded');
+            
+            if (sidebar.classList.contains('hidden')) {
+                localStorage.setItem('sidebarState', 'hidden');
+            } else {
+                localStorage.setItem('sidebarState', 'visible');
+            }
         });
 
         // Destaque ativo dinâmico no menu lateral (maior correspondência)
