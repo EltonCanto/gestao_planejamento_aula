@@ -13,3 +13,4 @@ PyYAML
 requests
 pillow
 xhtml2pdf
+python-docx
