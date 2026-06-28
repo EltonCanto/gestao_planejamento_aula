@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Plano de Aula - {{ turma }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+            color: black;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid black;
+        }
+        td, th {
+            border: 1px solid black;
+            padding: 5px;
+            vertical-align: top;
+        }
+        .header-logo {
+            text-align: center;
+            vertical-align: middle;
+            width: 25%;
+        }
+        .header-logo img {
+            width: 110px;
+        }
+        .header-text {
+            width: 75%;
+            font-size: 11pt;
+            line-height: 1.2;
+            vertical-align: middle;
+        }
+        .title-row {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            background-color: #f2f2f2;
+            vertical-align: middle;
+            padding: 5px;
+        }
+        /* Definindo alturas fixas para as seções preencherem a folha A4 (aprox 277mm úteis) */
+        .info-row td {
+            height: 15mm;
+        }
+        .content-row td {
+            height: 48mm;
+        }
+        .footer-row td {
+            height: 48mm;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td class="header-logo">
+                <img src="{{ logo_url|default:'logo.png' }}" alt="Brasão de Teresópolis" width="110">
+            </td>
+            <td class="header-text">
+                Estado do Rio de Janeiro<br>
+                Prefeitura Municipal de Teresópolis<br>
+                Secretaria Municipal de Educação<br>
+                Escola Municipal José Alves Ferreira<br>
+                Estrada João Adolpho Tayt-Sohn Snº — Santa Rosa<br>
+                E-mail: em.josealvesferreira@edu.teresopolis.rj.gov.br
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="title-row">PLANO DE AULA</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding: 0; border: none;">
+                <table style="border: none;">
+                    <tr class="info-row">
+                        <td style="width: 20%; border-top: none; border-bottom: none; border-left: none;">
+                            <strong>DATA:</strong><br>
+                            {{ data|default:"--/--/----" }}
+                        </td>
+                        <td style="width: 25%; border-top: none; border-bottom: none;">
+                            <strong>TURMA:</strong><br>
+                            {{ turma }}
+                        </td>
+                        <td style="width: 55%; border-top: none; border-bottom: none; border-right: none;">
+                            <strong>COMPONENTE CURRICULAR:</strong><br>
+                            {{ componente }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr class="content-row">
+            <td colspan="2">
+                <strong>OBJETO DO CONHECIMENTO:</strong><br>
+                {{ objeto|linebreaksbr }}
+            </td>
+        </tr>
+        <tr class="content-row">
+            <td colspan="2">
+                <strong>HABILIDADES NA BNCC:</strong><br>
+                {{ habilidades|linebreaksbr }}
+            </td>
+        </tr>
+        <tr class="content-row">
+            <td colspan="2">
+                <strong>OBJETIVOS ESPECÍFICOS:</strong><br>
+                {{ objetivos|linebreaksbr }}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding: 0; border: none;">
+                <table style="border: none;">
+                    <tr class="footer-row">
+                        <td style="width: 50%; border-top: none; border-bottom: none; border-left: none;">
+                            <strong>RECURSOS:</strong><br>
+                            {{ recursos|linebreaksbr }}
+                        </td>
+                        <td style="width: 50%; border-top: none; border-bottom: none; border-right: none;">
+                            <strong>AVALIAÇÃO:</strong><br>
+                            {{ avaliacao|linebreaksbr }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

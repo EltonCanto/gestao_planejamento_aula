@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block page_title %}Plano Diário Genérico{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+    
+    <div style="background-color: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #ffeeba;">
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+            ⚠️ Atenção
+        </h3>
+        <p style="margin-bottom: 0;">
+            Não foi encontrado um <strong>Planejamento Geral</strong> para a turma <strong>{{ turma.nome }}</strong> no dia <strong>{{ dia.data|date:"d/m/Y" }}</strong>. 
+            Você pode voltar ao calendário ou gerar um <strong>Plano Diário Genérico</strong> para esta data.
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+        <a href="{% url 'calendario' %}" class="btn btn-secondary">⬅️ Voltar ao Calendário</a>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 30px;">
+
+    <h2 style="margin-bottom: 20px;">Criar Plano Genérico</h2>
+    
+    <form method="POST" action="{% url 'plano_diario_generico_salvar' %}" id="form-generico">
+        {% csrf_token %}
+        <input type="hidden" name="turma_id" value="{{ turma.id }}">
+        <input type="hidden" name="dia_id" value="{{ dia.id }}">
+
+        <div class="form-group">
+            <label style="font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; display: block;">1. Selecione as Matérias ministradas hoje:</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                {% for materia in materias %}
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid #ddd; border-radius: 5px; transition: 0.2s;" class="materia-label">
+                    <input type="checkbox" name="materias" value="{{ materia.id }}" class="materia-checkbox" onchange="toggleMateriaConfig({{ materia.id }})">
+                    {{ materia.nome }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="configs-container" style="margin-top: 30px;">
+            <label style="font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; display: block;">2. Configure as Disciplinas (Opcional):</label>
+            <p id="no-selection-msg" style="color: #777; font-style: italic;">Selecione pelo menos uma matéria acima para configurar habilidades.</p>
+            
+            {% for materia in materias %}
+            <div id="config-materia-{{ materia.id }}" style="display: none; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">{{ materia.nome }}</h4>
+                
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Habilidades BNCC (Segure CTRL para selecionar várias):</label>
+                    <select name="normas_{{ materia.id }}" multiple class="form-control" style="height: 120px;">
+                        {% for norma in materia.normas.all %}
+                            <option value="{{ norma.id }}" title="{{ norma.descricao }}">{{ norma.codigo }} - {{ norma.descricao|truncatechars:100 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Observações / Sugestões para a Aula:</label>
+                    <textarea name="obs_{{ materia.id }}" class="form-control" rows="2" placeholder="Ex: Aula prática no laboratório, revisão para prova..."></textarea>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: right;">
+            <button type="submit" class="btn" style="padding: 12px 25px; font-size: 1.1rem;" id="btn-submit" disabled>
+                Continuar e Gerar Plano ➡️
+            </button>
+        </div>
+    </form>
+</div>
+
+{% block extra_js %}
+<script>
+    function toggleMateriaConfig(materiaId) {
+        const checkbox = document.querySelector(`input[name="materias"][value="${materiaId}"]`);
+        const configDiv = document.getElementById(`config-materia-${materiaId}`);
+        const label = checkbox.closest('label');
+        
+        if (checkbox.checked) {
+            configDiv.style.display = 'block';
+            label.style.borderColor = '#0056b3';
+            label.style.backgroundColor = '#e6f2ff';
+        } else {
+            configDiv.style.display = 'none';
+            label.style.borderColor = '#ddd';
+            label.style.backgroundColor = 'transparent';
+        }
+        
+        checkSubmitState();
+    }
+    
+    function checkSubmitState() {
+        const checkboxes = document.querySelectorAll('.materia-checkbox:checked');
+        const btnSubmit = document.getElementById('btn-submit');
+        const noSelectionMsg = document.getElementById('no-selection-msg');
+        
+        if (checkboxes.length > 0) {
+            btnSubmit.disabled = false;
+            noSelectionMsg.style.display = 'none';
+        } else {
+            btnSubmit.disabled = true;
+            noSelectionMsg.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Plano de Aula Diário | EduGestão{% endblock %}
+{% block page_title %}Plano de Aula: {{ plano.dia_letivo.data|date:"d/m/Y" }} - {{ plano.turma.nome }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    
+    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase;">Planejamento de Aula Diário</h1>
+        <p style="margin: 5px 0 0 0; font-size: 16px;"><strong>Turma:</strong> {{ plano.turma.nome }} | <strong>Data:</strong> {{ plano.dia_letivo.data|date:"d/m/Y" }}</p>
+        {% if plano.trimestre %}
+        <p style="margin: 5px 0 0 0; font-size: 14px;">{{ plano.trimestre.nome }}</p>
+        {% endif %}
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Componentes Curriculares</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.componentes_curriculares }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Objetos do Conhecimento</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.objeto_conhecimento }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Habilidades BNCC</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.habilidades_bncc }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Objetivos Específicos</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.objetivos_especificos }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Conteúdo Ministrado (Resumo)</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.conteudo_ministrado }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Recursos</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px 10px 10px;">{{ plano.recursos }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Anexos</h3>
+        <ul style="margin-left: 10px;">
+        {% for atividade in plano.atividades.all %}
+            {% for arq in atividade.arquivos.all %}
+                <li><a href="{{ arq.link }}" target="_blank">{{ arq.nome_arquivo }}</a> (Drive)</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #f0f0f0; padding: 5px 10px; border-left: 4px solid #000; margin-bottom: 10px;">Avaliação</h3>
+        <p style="white-space: pre-wrap; margin: 0 10px;">{{ plano.avaliacao }}</p>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center; display: flex; justify-content: space-around;">
+        <div style="border-top: 1px solid #000; width: 40%; padding-top: 5px;">
+            Assinatura do Professor
+        </div>
+        <div style="border-top: 1px solid #000; width: 40%; padding-top: 5px;">
+            Assinatura da Coordenação
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 50px;" class="no-print">
+        {% if documento_pdf %}
+            <a href="{{ documento_pdf.link_pdf }}" target="_blank" class="btn btn-primary" style="background-color: #28a745; border-color: #28a745;">
+                📄 Abrir Documento no Google Drive
+            </a>
+        {% else %}
+            <a href="{% url 'gerar_plano_pdf' plano.id %}" class="btn btn-secondary" onclick="return confirm('Isso irá gerar um PDF e salvar no Google Drive. Tem certeza?')">
+                🖨️ Gerar PDF e Salvar no Drive
+            </a>
+        {% endif %}
+        <a href="{% url 'calendario' %}" class="btn">Voltar ao Calendário</a>
+    </div>
+
+</div>
+
+<style>
+@media print {
+    body { background: #fff; }
+    .sidebar, header, .no-print { display: none !important; }
+    .main-content { margin-left: 0 !important; margin-top: 0 !important; padding: 0 !important; width: 100% !important; }
+    .content { margin: 0 !important; padding: 0 !important; }
+    .card { box-shadow: none !important; margin: 0 !important; padding: 0 !important; max-width: 100% !important; border: none !important; }
+}
+</style>
+{% endblock %}

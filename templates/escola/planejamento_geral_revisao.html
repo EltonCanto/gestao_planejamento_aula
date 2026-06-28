@@ -35,12 +35,11 @@
                         <strong>{{ item.dia.data|date:"d/m/Y" }}</strong><br>
                         <span style="font-size: 0.85rem; color: #666;">{{ item.dia.data|date:"l" }}</span>
                         
-                        {% if item.norma_principal %}
-                        <div style="margin-top: 10px; padding: 5px; background: #e9ecef; border-radius: 4px; border-left: 3px solid #007bff;">
+                        <div class="foco-principal-container" id="foco_principal_{{ item.dia.id }}" style="margin-top: 10px; padding: 5px; background: #e9ecef; border-radius: 4px; border-left: 3px solid #007bff; display: none;">
                             <span style="font-size: 0.8rem; font-weight: bold; color: #007bff;">Foco Principal:</span><br>
-                            <span style="font-size: 0.85rem; font-weight: bold;">{{ item.norma_principal }}</span>
+                            <div class="foco-principal-list" style="font-size: 0.85rem; font-weight: bold; display: flex; flex-direction: column; gap: 4px;">
+                            </div>
                         </div>
-                        {% endif %}
                         <input type="hidden" name="dia_id[]" value="{{ item.dia.id }}">
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top;">
@@ -55,7 +54,7 @@
                         <div style="max-height: 180px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: white;">
                             {% for norma in todas_normas %}
                             <label style="display: flex; gap: 8px; margin-bottom: 5px; align-items: flex-start; font-size: 0.9rem; font-weight: normal;">
-                                <input type="checkbox" name="normas_dia_{{ item.dia.id }}" value="{{ norma.id }}" class="bncc-checkbox"
+                                <input type="checkbox" name="normas_dia_{{ item.dia.id }}" value="{{ norma.id }}" class="bncc-checkbox" data-dia-id="{{ item.dia.id }}" data-codigo="{{ norma.codigo }}" data-descricao="{{ norma.descricao }}"
                                     {% if norma in item.normas %}checked{% endif %}>
                                 <span><strong>{{ norma.codigo }}</strong> <span class="bncc-count" data-norma-id="{{ norma.id }}" style="color: #007bff; font-weight: bold;">[0]</span>: {{ norma.descricao|truncatewords:15 }}</span>
                             </label>
@@ -76,28 +75,57 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Contador Dinâmico da BNCC
+    // 1. Contador Dinâmico da BNCC e Foco Principal
     const checkboxes = document.querySelectorAll('.bncc-checkbox');
     const countSpans = document.querySelectorAll('.bncc-count');
 
-    function updateCounts() {
+    function updateView() {
         let counts = {};
+        
+        // Calcula contagens totais
         document.querySelectorAll('.bncc-checkbox:checked').forEach(cb => {
             counts[cb.value] = (counts[cb.value] || 0) + 1;
         });
 
+        // Atualiza os contadores na lista de checkboxes ao lado direito
         countSpans.forEach(span => {
             let id = span.getAttribute('data-norma-id');
             let total = counts[id] || 0;
             span.textContent = `[${total}]`;
             span.style.color = total > 0 ? '#28a745' : '#6c757d'; // Verde se > 0
         });
+
+        // Atualiza a área de Foco Principal para cada dia
+        const diasContainers = document.querySelectorAll('.foco-principal-container');
+        diasContainers.forEach(container => {
+            const diaId = container.id.replace('foco_principal_', '');
+            const listContainer = container.querySelector('.foco-principal-list');
+            const checkboxesDoDia = document.querySelectorAll(`.bncc-checkbox[data-dia-id="${diaId}"]:checked`);
+            
+            listContainer.innerHTML = '';
+            
+            if (checkboxesDoDia.length > 0) {
+                container.style.display = 'block';
+                checkboxesDoDia.forEach(cb => {
+                    const codigo = cb.getAttribute('data-codigo');
+                    const descricao = cb.getAttribute('data-descricao');
+                    const total = counts[cb.value] || 0;
+                    
+                    const item = document.createElement('div');
+                    // Exibindo apenas Código e Contagem
+                    item.innerHTML = `<span style="color: #333;">${codigo}</span> <span style="color: #28a745;">[${total}]</span>`;
+                    listContainer.appendChild(item);
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        });
     }
 
     checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateCounts);
+        cb.addEventListener('change', updateView);
     });
-    updateCounts(); // Inicializar
+    updateView(); // Inicializar
 
     // 2. Sugestão de Atividades
     const btnSugerirList = document.querySelectorAll('.btn-sugerir');

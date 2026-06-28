@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Plano Diário | EduGestão{% endblock %}
+{% block page_title %}Planejamento Diário: {{ dia.data|date:"d/m/Y" }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px; margin-bottom: 20px;">
+    <h2>1. Cadastro de Atividades e Dinâmicas</h2>
+    <p class="text-muted">Abaixo estão as disciplinas planejadas para hoje. Cadastre as dinâmicas e faça o upload de arquivos. O sistema os enviará para o Google Drive automaticamente.</p>
+    
+    {% for item in atividades_com_aulas %}
+    <div style="border: 1px solid #ccc; border-radius: 8px; margin-bottom: 1rem; padding: 1rem; background: #fafafa;">
+        <h4 style="margin-top: 0; color: #007bff;">{{ item.atividade.materia.nome }}</h4>
+        
+        <div style="margin-bottom: 1rem; padding: 10px; background: #e9ecef; border-left: 4px solid #17a2b8; font-size: 0.9rem;">
+            <strong>Habilidades da BNCC Planejadas:</strong><br>
+            {% for norma in item.aula_geral.normas.all %}
+                - {{ norma.codigo }}: {{ norma.descricao }}<br>
+            {% empty %}
+                <span style="color: #666;">Nenhuma habilidade selecionada no planejamento geral.</span><br>
+            {% endfor %}
+            <div style="margin-top: 8px;">
+                <strong>Sugestão de Atividades (Planejamento Geral):</strong><br>
+                <span style="white-space: pre-wrap;">{{ item.aula_geral.sugestoes_atividades|default:"Nenhuma sugestão cadastrada." }}</span>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label style="font-weight: bold;">Dinâmica da Aula:</label>
+            <textarea class="dinamica-input" data-atividade-id="{{ item.atividade.id }}" rows="3" style="width: 100%; box-sizing: border-box; padding: 8px;" placeholder="Ex: Roda de conversa, leitura coletiva...">{{ item.atividade.dinamica }}</textarea>
+            <small style="color: #666;" class="status-dinamica" id="status_dinamica_{{ item.atividade.id }}"></small>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label style="font-weight: bold;">Arquivos Anexados:</label>
+            <ul id="lista_arquivos_{{ item.atividade.id }}" style="margin: 5px 0; padding-left: 20px; font-size: 0.9rem;">
+                {% for arq in item.atividade.arquivos.all %}
+                <li>
+                    <a href="{{ arq.link }}" target="_blank">{{ arq.nome_arquivo }}</a> 
+                    <span style="color: #666; font-size: 0.8rem;">(Resumo IA: {{ arq.resumo_ia }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <input type="file" id="file_{{ item.atividade.id }}" style="display: none;">
+            <button type="button" class="btn btn-secondary btn-upload" data-atividade-id="{{ item.atividade.id }}" style="padding: 4px 10px; font-size: 0.85rem;">+ Enviar Arquivo (Drive)</button>
+            <span id="upload_status_{{ item.atividade.id }}" style="font-size: 0.8rem; color: #d39e00; margin-left: 10px;"></span>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <form action="{% url 'plano_diario_gerar' %}" method="POST" style="margin-top: 2rem;">
+        {% csrf_token %}
+        <input type="hidden" name="plano_id" value="{{ plano.id }}">
+        <button type="submit" class="btn" style="width: 100%; background: #28a745; border-color: #28a745;">
+            🪄 Gerar Planejamento Completo com IA
+        </button>
+        <p style="font-size: 0.8rem; text-align: center; color: #666; margin-top: 5px;">A IA irá ler todas as dinâmicas, o contexto dos arquivos e as habilidades da BNCC para preencher os campos abaixo.</p>
+    </form>
+</div>
+
+<div class="card" style="max-width: 1000px;">
+    <h2>2. Edição do Planejamento</h2>
+    
+    <form id="form-edicao" action="{% url 'plano_diario_salvar' plano.id %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="plano_id" value="{{ plano.id }}">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label>Componentes Curriculares:</label>
+                <textarea name="componentes_curriculares" class="auto-save" rows="3" style="width: 100%; box-sizing: border-box;">{{ plano.componentes_curriculares }}</textarea>
+            </div>
+            <div>
+                <label>Objeto do Conhecimento:</label>
+                <textarea name="objeto_conhecimento" class="auto-save" rows="3" style="width: 100%; box-sizing: border-box;">{{ plano.objeto_conhecimento }}</textarea>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label>Habilidades da BNCC:</label>
+            <textarea name="habilidades_bncc" class="auto-save" rows="3" style="width: 100%; box-sizing: border-box;">{{ plano.habilidades_bncc }}</textarea>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label>Objetivos Específicos:</label>
+                <textarea name="objetivos_especificos" class="auto-save" rows="4" style="width: 100%; box-sizing: border-box;">{{ plano.objetivos_especificos }}</textarea>
+            </div>
+            <div>
+                <label>Recursos:</label>
+                <textarea name="recursos" class="auto-save" rows="4" style="width: 100%; box-sizing: border-box;">{{ plano.recursos }}</textarea>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label>Avaliação:</label>
+            <textarea name="avaliacao" class="auto-save" rows="3" style="width: 100%; box-sizing: border-box;">{{ plano.avaliacao }}</textarea>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label>Conteúdo Ministrado (Resumo):</label>
+            <textarea name="conteudo_ministrado" class="auto-save" rows="4" style="width: 100%; box-sizing: border-box;">{{ plano.conteudo_ministrado }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: space-between; align-items: center; margin-top: 2rem;">
+            <span id="save-status" style="color: #28a745; font-size: 0.9rem;"></span>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-secondary">💾 Salvar Manualmente</button>
+            </div>
+        </div>
+    </form>
+    
+    <hr style="margin: 2rem 0; border: 0; border-top: 1px solid #eee;">
+    
+    <form action="{% url 'plano_diario_finalizar' plano.id %}" method="POST" onsubmit="return confirm('Tem certeza? Isso bloqueará a edição.');">
+        {% csrf_token %}
+        <input type="hidden" name="plano_id" value="{{ plano.id }}">
+        <button type="submit" class="btn" style="width: 100%; background: #dc3545; border-color: #dc3545;">
+            🔒 Finalizar Planejamento do Dia
+        </button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Auto-save para Dinâmicas
+    let dinamicaTimeout;
+    const dinamicaInputs = document.querySelectorAll('.dinamica-input');
+    dinamicaInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(dinamicaTimeout);
+            const atividadeId = this.getAttribute('data-atividade-id');
+            const statusSpan = document.getElementById(`status_dinamica_${atividadeId}`);
+            statusSpan.innerText = 'Salvando...';
+            
+            dinamicaTimeout = setTimeout(async () => {
+                const response = await fetch('{% url "api_salvar_dinamica" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ atividade_id: atividadeId, texto: this.value })
+                });
+                if(response.ok) {
+                    statusSpan.innerText = 'Salvo.';
+                    setTimeout(() => statusSpan.innerText = '', 2000);
+                }
+            }, 1000);
+        });
+    });
+    
+    // Upload de Arquivos
+    const btnUploads = document.querySelectorAll('.btn-upload');
+    btnUploads.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const atividadeId = this.getAttribute('data-atividade-id');
+            document.getElementById(`file_${atividadeId}`).click();
+        });
+    });
+    
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', async function() {
+            if(this.files.length === 0) return;
+            const file = this.files[0];
+            const atividadeId = this.id.replace('file_', '');
+            const statusSpan = document.getElementById(`upload_status_${atividadeId}`);
+            
+            statusSpan.innerText = 'Enviando p/ Drive e Extraindo texto via IA... ⏳';
+            
+            const formData = new FormData();
+            formData.append('arquivo', file);
+            formData.append('atividade_id', atividadeId);
+            
+            try {
+                const response = await fetch('{% url "api_upload_atividade" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    statusSpan.innerText = 'Upload concluído! ✔️';
+                    setTimeout(() => statusSpan.innerText = '', 3000);
+                    
+                    const lista = document.getElementById(`lista_arquivos_${atividadeId}`);
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a href="${data.arquivo.link}" target="_blank">${data.arquivo.nome}</a> <span style="color: #666; font-size: 0.8rem;">(Resumo IA: ${data.arquivo.resumo})</span>`;
+                    lista.appendChild(li);
+                } else {
+                    statusSpan.innerText = 'Erro: ' + data.erro;
+                }
+            } catch (err) {
+                statusSpan.innerText = 'Erro ao conectar.';
+            }
+        });
+    });
+    
+    // Auto-save para o Formulário Principal
+    let formTimeout;
+    const formFields = document.querySelectorAll('.auto-save');
+    const form = document.getElementById('form-edicao');
+    const saveStatus = document.getElementById('save-status');
+    
+    formFields.forEach(field => {
+        field.addEventListener('input', function() {
+            clearTimeout(formTimeout);
+            saveStatus.innerText = 'Editando...';
+            
+            formTimeout = setTimeout(async () => {
+                saveStatus.innerText = 'Salvando automaticamente...';
+                
+                const formData = new FormData(form);
+                
+                try {
+                    const response = await fetch('{% url "plano_diario_salvar" plano.id %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        saveStatus.innerText = '✓ Salvo automático';
+                    }
+                } catch (err) {
+                    saveStatus.innerText = 'Erro no auto-save';
+                }
+            }, 2000);
+        });
+    });
+});
+</script>
+{% endblock %}

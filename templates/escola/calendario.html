@@ -67,10 +67,22 @@
 {% endif %}
 
 <div class="card">
+    <form method="GET" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+        <input type="hidden" name="ano" value="{{ ano_atual }}">
+        <input type="hidden" name="mes" value="{{ mes_atual }}">
+        <label for="turma_select" style="font-weight: bold; margin-right: 10px;">Planejamento Diário (Selecione a Turma):</label>
+        <select name="turma" id="turma_select" onchange="this.form.submit()" style="padding: 5px; border-radius: 4px; min-width: 200px;">
+            <option value="">-- Selecione uma turma --</option>
+            {% for t in turmas %}
+                <option value="{{ t.id }}" {% if t.id == turma_selecionada %}selected{% endif %}>{{ t.nome }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <a href="?ano={{ ant_ano }}&mes={{ ant_mes }}" class="btn btn-secondary">⬅️ Mês Anterior</a>
+        <a href="?ano={{ ant_ano }}&mes={{ ant_mes }}{% if turma_selecionada %}&turma={{ turma_selecionada }}{% endif %}" class="btn btn-secondary">⬅️ Mês Anterior</a>
         <h2 style="margin: 0;">Mês {{ mes_atual }}/{{ ano_atual }}</h2>
-        <a href="?ano={{ prox_ano }}&mes={{ prox_mes }}" class="btn btn-secondary">Mês Seguinte ➡️</a>
+        <a href="?ano={{ prox_ano }}&mes={{ prox_mes }}{% if turma_selecionada %}&turma={{ turma_selecionada }}{% endif %}" class="btn btn-secondary">Mês Seguinte ➡️</a>
     </div>
     <p class="text-muted" style="text-align: center; margin-bottom: 1.5rem;">Clique em 'Alternar' para marcar se o dia terá aula ou não (útil para criar feriados).</p>
     
@@ -88,8 +100,10 @@
                 {% if dia %}
                     <div class="calendar-day {% if dia.eh_letivo %}letivo{% else %}nao-letivo{% endif %}">
                         <div class="day-number">{{ dia.data.day }}</div>
-                        <div class="status-badge">
-                            {% if dia.eh_letivo %}
+                        <div class="status-badge" style="{% if dia.plano_finalizado %}background-color: #28a745; color: white;{% endif %}">
+                            {% if dia.plano_finalizado %}
+                                Dia Planejado
+                            {% elif dia.eh_letivo %}
                                 Aula
                             {% else %}
                                 Sem Aula
@@ -112,6 +126,36 @@
                                 </button>
                             </div>
                         </form>
+                        
+                        {% if dia.eh_letivo and turma_selecionada and dia.id %}
+                        <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                            {% if dia.plano_finalizado %}
+                                <a href="{% url 'plano_diario_abrir' turma_id=turma_selecionada dia_id=dia.id %}" class="btn" style="background: #28a745; border-color: #28a745; font-size: 0.75rem; padding: 0.2rem 0.5rem; width: 100%; display: block; text-align: center; margin-bottom: 5px;">
+                                    ✅ Ver Plano Finalizado
+                                </a>
+                                <form method="POST" action="{% url 'plano_diario_excluir' dia.plano_id %}" onsubmit="return confirm('Tem certeza que deseja excluir o planejamento diário deste dia? Todos os dados preenchidos serão perdidos.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn" style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.75rem; padding: 0.2rem 0.5rem; width: 100%;">
+                                        🗑️ Excluir Plano
+                                    </button>
+                                </form>
+                            {% elif dia.tem_plano %}
+                                <a href="{% url 'plano_diario_abrir' turma_id=turma_selecionada dia_id=dia.id %}" class="btn" style="background: #17a2b8; border-color: #17a2b8; font-size: 0.75rem; padding: 0.2rem 0.5rem; width: 100%; display: block; text-align: center; margin-bottom: 5px;">
+                                    📝 Continuar Planejamento
+                                </a>
+                                <form method="POST" action="{% url 'plano_diario_excluir' dia.plano_id %}" onsubmit="return confirm('Tem certeza que deseja excluir este rascunho de planejamento?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn" style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.75rem; padding: 0.2rem 0.5rem; width: 100%;">
+                                        🗑️ Excluir Rascunho
+                                    </button>
+                                </form>
+                            {% else %}
+                                <a href="{% url 'plano_diario_abrir' turma_id=turma_selecionada dia_id=dia.id %}" class="btn" style="background: #17a2b8; border-color: #17a2b8; font-size: 0.75rem; padding: 0.2rem 0.5rem; width: 100%; display: block; text-align: center;">
+                                    📝 Planejar Dia
+                                </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="calendar-day empty-day"></div>

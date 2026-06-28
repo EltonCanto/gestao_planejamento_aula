@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios Trimestrais | EduGestão{% endblock %}
+{% block page_title %}Relatórios Trimestrais{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h3 style="margin-bottom: 1.5rem; color: #2c3e50;">Selecione a Turma e Trimestre</h3>
+    
+    <form method="POST" action="{% url 'relatorio_index' %}">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="turma_id" style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Turma</label>
+            <select name="turma_id" id="turma_id" class="form-control" required>
+                <option value="">Selecione uma Turma</option>
+                {% for t in turmas %}
+                    <option value="{{ t.id }}">{{ t.nome }} - {{ t.ano }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 2rem;">
+            <label for="trimestre_id" style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Trimestre</label>
+            <select name="trimestre_id" id="trimestre_id" class="form-control" required>
+                <option value="">Selecione um Trimestre</option>
+                {% for trim in trimestres %}
+                    <option value="{{ trim.id }}">{{ trim.nome }} ({{ trim.ano_letivo.ano }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100" style="font-size: 1.1rem; padding: 10px;">
+            Acessar Lista de Alunos →
+        </button>
+    </form>
+</div>
+{% endblock %}

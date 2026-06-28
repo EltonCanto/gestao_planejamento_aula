@@ -1,3 +1,4 @@
+{% load pdf_filters %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -152,21 +153,17 @@
         }
 
         .vertical-title {
-            width: 50px;
+            width: 80px;
             text-align: center;
             vertical-align: middle;
             background-color: #f9f9f9;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            padding: 5px;
         }
 
         .vertical-text {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
             text-align: center;
-            font-weight: bold;
-            font-size: 8pt;
-            white-space: nowrap;
             margin: auto;
         }
 
@@ -254,17 +251,21 @@
     <!-- PÁGINA 1: Cabeçalho, Info Aluno e Matérias -->
     <div class="a4-page">
         <!-- Header -->
-        <header class="doc-header">
-            <div class="doc-logo">
-                <img src="{{ logo_url|default:'logo.png' }}" alt="Brasão de Teresópolis">
-            </div>
-            <div class="doc-header-info">
-                <p>Estado do Rio de Janeiro</p>
-                <p style="text-transform: uppercase;">PREFEITURA MUNICIPAL DE TERESÓPOLIS</p>
-                <p>Secretaria Municipal de Educação</p>
-                <p>Unidade Escolar: E. M. José Alves Ferreira</p>
-            </div>
-        </header>
+        <div style="border: 1px solid black; margin-bottom: 10px;">
+            <table border="0" cellpadding="10" style="width: 100%;">
+                <tr>
+                    <td width="120" align="center" valign="middle">
+                        <img src="{{ logo_url|default:'logo.png' }}" width="90" height="90">
+                    </td>
+                    <td valign="middle">
+                        <p style="margin: 0; font-size: 10pt; line-height: 1.2;">Estado do Rio de Janeiro</p>
+                        <p style="margin: 0; font-size: 10pt; line-height: 1.2;">PREFEITURA MUNICIPAL DE TERESÓPOLIS</p>
+                        <p style="margin: 0; font-size: 10pt; line-height: 1.2;">Secretaria Municipal de Educação</p>
+                        <p style="margin: 0; font-size: 10pt; line-height: 1.2;">Unidade Escolar: E. M. José Alves Ferreira</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
         <!-- Document Title -->
         <div class="doc-title-main">
@@ -312,25 +313,25 @@
         <table class="subjects-table">
             <tr>
                 <td class="vertical-title">
-                    <div class="vertical-text">LINGUAGEM<br>(PORTUGUÊS, ARTES E<br>PRÁTICAS CORPORAIS)</div>
+                    <div class="vertical-text">{{ 'LINGUAGEM\n(PORTUGUÊS, ARTES E\nPRÁTICAS CORPORAIS)'|vertical_text_image }}</div>
                 </td>
                 <td class="subject-content content-block">{{ linguagem|linebreaksbr }}</td>
             </tr>
             <tr>
                 <td class="vertical-title">
-                    <div class="vertical-text">MATEMÁTICA</div>
+                    <div class="vertical-text">{{ 'MATEMÁTICA'|vertical_text_image }}</div>
                 </td>
                 <td class="subject-content content-block">{{ matematica|linebreaksbr }}</td>
             </tr>
             <tr>
                 <td class="vertical-title">
-                    <div class="vertical-text">CIÊNCIAS<br>HUMANAS E<br>DA NATUREZA</div>
+                    <div class="vertical-text">{{ 'CIÊNCIAS\nHUMANAS E\nDA NATUREZA'|vertical_text_image }}</div>
                 </td>
                 <td class="subject-content content-block">{{ ciencias|linebreaksbr }}</td>
             </tr>
             <tr>
                 <td class="vertical-title">
-                    <div class="vertical-text">CONCLUSÃO</div>
+                    <div class="vertical-text">{{ 'CONCLUSÃO'|vertical_text_image }}</div>
                 </td>
                 <td class="subject-content content-block">{{ conclusao|linebreaksbr }}</td>
             </tr>

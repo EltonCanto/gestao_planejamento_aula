@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - {{ turma.nome }} | EduGestão{% endblock %}
+{% block page_title %}Relatórios Trimestrais: {{ turma.nome }} - {{ trimestre.nome }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <a href="{% url 'relatorio_index' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="border-bottom: 2px solid #eee;">
+                <th style="padding: 1rem; text-align: left;">Aluno</th>
+                <th style="padding: 1rem; text-align: center;">Status do Relatório</th>
+                <th style="padding: 1rem; text-align: right;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in lista_alunos %}
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 1rem; font-weight: 500;">
+                    {{ item.aluno.nome }}
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    {% if item.relatorio %}
+                        <span class="badge" style="background: #28a745; padding: 5px 10px; border-radius: 15px; color: white;">
+                            Versão {{ item.relatorio.versao }}
+                        </span>
+                        {% if item.relatorio.link_pdf %}
+                            <span class="badge" style="background: #17a2b8; padding: 5px 10px; border-radius: 15px; color: white; margin-left: 5px;">
+                                PDF Salvo
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge" style="background: #ffc107; padding: 5px 10px; border-radius: 15px; color: #333;">
+                            Não Iniciado
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; text-align: right;">
+                    {% if item.relatorio %}
+                        <a href="{% url 'relatorio_revisar' item.relatorio.id %}" class="btn btn-sm btn-info" style="color: white;">
+                            ✏️ Revisar Relatório
+                        </a>
+                    {% else %}
+                        <a href="{% url 'relatorio_gerar_ia' item.aluno.id trimestre.id %}" class="btn btn-sm btn-primary" onclick="mostrarLoading(this)">
+                            ✨ Gerar com IA
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 2rem;">Nenhum aluno nesta turma.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function mostrarLoading(btn) {
+        btn.innerHTML = '⏳ Gerando... (Pode demorar um pouco)';
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.7';
+    }
+</script>
+{% endblock %}

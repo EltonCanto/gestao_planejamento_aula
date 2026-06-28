@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Revisão de Relatório | EduGestão{% endblock %}
+{% block page_title %}Relatório Individual - {{ relatorio.aluno.nome }}{% endblock %}
+
+{% block content %}
+<style>
+    .secao-titulo {
+        background: #f4f6f9;
+        padding: 10px;
+        border-left: 4px solid #0056b3;
+        font-weight: bold;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    textarea {
+        width: 100%;
+        font-family: inherit;
+        font-size: 1rem;
+        line-height: 1.5;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <p style="margin:0;"><strong>Turma:</strong> {{ turma.nome }}</p>
+        <p style="margin:0;"><strong>Trimestre:</strong> {{ relatorio.trimestre.nome }}</p>
+        <p style="margin:0;"><strong>Versão Atual:</strong> v{{ relatorio.versao }}</p>
+    </div>
+    
+    <div style="display: flex; gap: 1rem;">
+        <a href="{% url 'relatorio_turma' turma.id relatorio.trimestre.id %}" class="btn btn-secondary">← Voltar para Lista</a>
+        
+        {% if relatorio.link_pdf %}
+            <a href="{{ relatorio.link_pdf }}" target="_blank" class="btn" style="background-color: #28a745; color: white;">
+                📄 Abrir PDF no Drive
+            </a>
+        {% endif %}
+        
+        <a href="{% url 'relatorio_gerar_pdf' relatorio.id %}" class="btn" style="background-color: #dc3545; color: white;" onclick="return confirm('Tem certeza? Isso irá gerar um novo PDF no Drive baseado nesta versão (v{{ relatorio.versao }}).')">
+            🖨️ Gerar/Atualizar PDF
+        </a>
+    </div>
+</div>
+
+<div style="display: flex; gap: 2rem;">
+    <!-- Formulário Principal -->
+    <div class="card" style="flex: 2;">
+        <h3 style="margin-bottom: 1rem;">Texto do Relatório</h3>
+        <p class="text-muted">A IA gerou a base do relatório. Você pode editar os textos abaixo. Ao salvar, uma nova versão será criada e armazenada no histórico.</p>
+        
+        <form method="POST" action="{% url 'relatorio_revisar' relatorio.id %}">
+            {% csrf_token %}
+            
+            <div class="secao-titulo">Visão Geral <small style="font-weight: normal;">(Frequência, Comportamento, Evolução)</small></div>
+            <textarea name="visao_geral" rows="6">{{ relatorio.visao_geral }}</textarea>
+            
+            <div class="secao-titulo">Linguagens <small style="font-weight: normal;">(Leitura, Escrita, Oralidade)</small></div>
+            <textarea name="linguagem" rows="6">{{ relatorio.linguagem }}</textarea>
+            
+            <div class="secao-titulo">Matemática <small style="font-weight: normal;">(Raciocínio Lógico, Números, Problemas)</small></div>
+            <textarea name="matematica" rows="6">{{ relatorio.matematica }}</textarea>
+            
+            <div class="secao-titulo">Ciências <small style="font-weight: normal;">(Natureza e Sociedade)</small></div>
+            <textarea name="ciencias" rows="6">{{ relatorio.ciencias }}</textarea>
+            
+            <div class="secao-titulo">Conclusão <small style="font-weight: normal;">(Avanços e Desafios)</small></div>
+            <textarea name="conclusao" rows="6">{{ relatorio.conclusao }}</textarea>
+            
+            <div style="margin-top: 2rem; position: sticky; bottom: 20px; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary" style="font-size: 1.2rem; padding: 0.75rem 2rem;">
+                    💾 Salvar como Nova Versão
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Histórico de Versões Lateral -->
+    <div style="flex: 1; max-width: 350px;">
+        <div class="card" style="background-color: #f8f9fa;">
+            <h4 style="margin-bottom: 1rem;">Histórico de Versões</h4>
+            {% if versoes %}
+                <ul style="list-style: none; padding: 0;">
+                    {% for v in versoes %}
+                        <li style="margin-bottom: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                            <strong style="display: block; color: #555;">Versão {{ v.versao }}</strong>
+                            <small class="text-muted">Gerado em {{ v.gerado_em|date:"d/m/Y H:i" }}</small><br>
+                            <a href="{% url 'relatorio_revisar' v.id %}" style="font-size: 0.9rem;">Visualizar esta versão</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">Nenhuma outra versão anterior.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

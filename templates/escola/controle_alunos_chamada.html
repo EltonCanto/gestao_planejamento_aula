@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Frequência | EduGestão{% endblock %}
+{% block page_title %}Controle de Frequência e Observações{% endblock %}
+
+{% block content %}
+<style>
+    .header-page {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+    }
+    .aluno-header {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        cursor: pointer;
+    }
+    .aluno-actions {
+        display: flex; 
+        align-items: center; 
+        gap: 2rem;
+    }
+    .badge-status {
+        padding: 0.5rem 1rem; 
+        border-radius: 20px; 
+        font-weight: bold; 
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .header-page {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .aluno-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .aluno-actions {
+            width: 100%;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+    }
+</style>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="header-page">
+        <div>
+            <h2>{{ turma.nome }} - {{ turma.ano }}</h2>
+            <p class="text-muted" style="margin-bottom: 0;"><strong>Data:</strong> {{ dia.data|date:"d/m/Y" }}</p>
+            {% if materias_previstas %}
+                <p class="text-muted" style="margin-bottom: 0;"><strong>Matérias:</strong> {{ materias_previstas|join:", " }}</p>
+            {% else %}
+                <p class="text-muted" style="margin-bottom: 0; color: #dc3545 !important;">Nenhuma matéria prevista para este dia.</p>
+            {% endif %}
+        </div>
+        <div>
+            {% if registro.presenca_lancada %}
+                <span class="badge-status" style="background: #28a745; color: white;">
+                    ✓ Presença Lançada
+                </span>
+            {% else %}
+                <span class="badge-status" style="background: #ffc107; color: #333;">
+                    Pendente
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{% url 'controle_alunos_chamada' turma.id dia.id %}" id="formChamada" onsubmit="return validarFormulario()">
+    {% csrf_token %}
+    
+    <div class="card" style="margin-bottom: 2rem; background-color: #f8f9fa;">
+        <h3 style="margin-bottom: 1.5rem;">Informações Gerais da Aula</h3>
+        
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+                <label for="status_aula" style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Situação da Aula</label>
+                <select name="status_aula" id="status_aula" class="form-control" onchange="tratarStatusAula()">
+                    <option value="M" {% if registro.status == 'M' or registro.status == 'P' %}selected{% endif %}>Ministrada</option>
+                    <option value="C" {% if registro.status == 'C' %}selected{% endif %}>Cancelada</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="bloco_cancelamento" style="display: {% if registro.status == 'C' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
+            <label for="motivo_cancelamento" style="font-weight: bold; color: #dc3545; display: block; margin-bottom: 0.5rem;">Motivo do Cancelamento (Obrigatório)</label>
+            <textarea name="motivo_cancelamento" id="motivo_cancelamento" class="form-control" rows="2" style="border-color: #f5c6cb;">{{ registro.motivo_cancelamento }}</textarea>
+        </div>
+        
+        <div style="margin-bottom: 0.5rem;">
+            <label for="observacoes_gerais" style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Observações Gerais da Aula (Opcional)</label>
+            <textarea name="observacoes_gerais" id="observacoes_gerais" class="form-control" rows="3" placeholder="Registre eventos ocorridos, comportamento da turma, atividades extraordinárias, etc...">{{ registro.observacoes_gerais }}</textarea>
+        </div>
+    </div>
+    
+    <div id="secao_lista_alunos" style="display: {% if registro.status == 'C' %}none{% else %}block{% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Lista de Alunos</h3>
+            <a href="{% url 'controle_alunos_index' %}" class="btn btn-secondary">← Voltar</a>
+        </div>
+
+    <div class="lista-alunos" style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for item in lista_alunos %}
+            <div class="aluno-card" id="card_{{ item.aluno.id }}" style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; background: {% if item.frequencia and not item.frequencia.presente %}#fff3f3{% elif item.frequencia and item.frequencia.observacao %}#fffdf0{% else %}white{% endif %}; transition: all 0.3s ease;">
+                
+                <div class="aluno-header" onclick="togglePainel('{{ item.aluno.id }}')">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 1.2rem; font-weight: bold; color: #555; width: 30px;">{{ forloop.counter }}</span>
+                        <div style="font-size: 1.1rem; font-weight: 500;">
+                            {{ item.aluno.nome }}
+                            {% if item.frequencia and not item.frequencia.presente %}
+                                <span title="Aluno Ausente" style="color: #dc3545; margin-left: 5px;">❌</span>
+                            {% endif %}
+                            {% if item.frequencia and item.frequencia.observacao %}
+                                <span title="Com Observação" style="color: #f39c12; margin-left: 5px;">📝</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="aluno-actions">
+                        <div style="text-align: right;">
+                            <small class="text-muted" style="display: block; font-size: 0.8rem;">Faltas/Aulas</small>
+                            <span style="font-weight: bold; color: #666; font-size: 1.1rem;">
+                                {{ item.total_faltas }}/{{ item.total_aulas }}
+                            </span>
+                        </div>
+                        
+                        <div class="toggle-presenca" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label for="presente_{{ item.aluno.id }}" style="margin: 0; font-weight: bold; cursor: pointer;">Presente</label>
+                            <input type="checkbox" name="presente" id="presente_{{ item.aluno.id }}" value="{{ item.aluno.id }}" 
+                                   style="width: 20px; height: 20px; cursor: pointer;"
+                                   {% if not item.frequencia or item.frequencia.presente %}checked{% endif %}
+                                   onchange="tratarFalta('{{ item.aluno.id }}', this)">
+                        </div>
+                        
+                        <span id="seta_{{ item.aluno.id }}" style="font-size: 1.2rem; color: #888; transition: transform 0.3s;">▼</span>
+                    </div>
+                </div>
+
+                <div id="painel_{{ item.aluno.id }}" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed #ddd;">
+                    
+                    <div id="bloco_justificativa_{{ item.aluno.id }}" style="margin-bottom: 1rem; {% if not item.frequencia or item.frequencia.presente %}display: none;{% endif %}">
+                        <label for="justificativa_{{ item.aluno.id }}" style="font-weight: bold; color: #dc3545;">Justificativa da Falta (Obrigatório):</label>
+                        <textarea name="justificativa_{{ item.aluno.id }}" id="justificativa_{{ item.aluno.id }}" class="form-control" rows="2" style="border-color: #f5c6cb;" placeholder="Informe o motivo da ausência...">{% if item.frequencia %}{{ item.frequencia.justificativa }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="observacao_{{ item.aluno.id }}" style="font-weight: bold; color: #0056b3;">Observações Pedagógicas (Opcional):</label>
+                        <textarea name="observacao_{{ item.aluno.id }}" id="observacao_{{ item.aluno.id }}" class="form-control" rows="2" placeholder="Anote comportamentos, dificuldades, destaques, etc...">{% if item.frequencia %}{{ item.frequencia.observacao }}{% endif %}</textarea>
+                    </div>
+                    
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    </div> <!-- Fim secao_lista_alunos -->
+
+    <div style="margin-top: 2rem; position: sticky; bottom: 20px; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary" style="font-size: 1.2rem; padding: 0.75rem 2rem;">
+            💾 Salvar Frequência e Observações
+        </button>
+    </div>
+</form>
+
+<script>
+    function tratarStatusAula() {
+        const status = document.getElementById('status_aula').value;
+        const blocoCancelamento = document.getElementById('bloco_cancelamento');
+        const secaoAlunos = document.getElementById('secao_lista_alunos');
+        
+        if (status === 'C') {
+            blocoCancelamento.style.display = 'block';
+            secaoAlunos.style.display = 'none';
+        } else {
+            blocoCancelamento.style.display = 'none';
+            secaoAlunos.style.display = 'block';
+        }
+    }
+
+    function togglePainel(alunoId) {
+        const painel = document.getElementById('painel_' + alunoId);
+        const seta = document.getElementById('seta_' + alunoId);
+        
+        if (painel.style.display === 'none') {
+            painel.style.display = 'block';
+            seta.style.transform = 'rotate(180deg)';
+        } else {
+            painel.style.display = 'none';
+            seta.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function tratarFalta(alunoId, checkbox) {
+        const blocoJustificativa = document.getElementById('bloco_justificativa_' + alunoId);
+        const painel = document.getElementById('painel_' + alunoId);
+        const card = document.getElementById('card_' + alunoId);
+        
+        if (!checkbox.checked) {
+            // Faltou
+            blocoJustificativa.style.display = 'block';
+            painel.style.display = 'block';
+            document.getElementById('seta_' + alunoId).style.transform = 'rotate(180deg)';
+            card.style.background = '#fff3f3';
+        } else {
+            // Presente
+            blocoJustificativa.style.display = 'none';
+            // Se não tem observação, pode voltar a cor branca, mas vamos simplificar
+            const obsValue = document.getElementById('observacao_' + alunoId).value;
+            if (obsValue.trim() !== '') {
+                card.style.background = '#fffdf0';
+            } else {
+                card.style.background = 'white';
+            }
+        }
+    }
+
+    function validarFormulario() {
+        const status = document.getElementById('status_aula').value;
+        
+        if (status === 'C') {
+            const motivo = document.getElementById('motivo_cancelamento').value.trim();
+            if (motivo === '') {
+                alert("O motivo do cancelamento é obrigatório.");
+                document.getElementById('motivo_cancelamento').focus();
+                return false;
+            }
+            return true;
+        }
+
+        const alunos = document.querySelectorAll('.aluno-card');
+        let formValido = true;
+        let primeiroErro = null;
+        
+        alunos.forEach(card => {
+            const alunoId = card.id.split('_')[1];
+            const presente = document.getElementById('presente_' + alunoId).checked;
+            const justificativa = document.getElementById('justificativa_' + alunoId).value.trim();
+            
+            if (!presente && justificativa === '') {
+                formValido = false;
+                card.style.border = '2px solid #dc3545';
+                
+                // Abre o painel se estiver fechado
+                document.getElementById('painel_' + alunoId).style.display = 'block';
+                document.getElementById('seta_' + alunoId).style.transform = 'rotate(180deg)';
+                
+                if (!primeiroErro) {
+                    primeiroErro = document.getElementById('justificativa_' + alunoId);
+                }
+            } else {
+                card.style.border = '1px solid #ddd';
+            }
+        });
+        
+        if (!formValido) {
+            alert("Atenção: Você marcou alunos como ausentes sem informar a justificativa. O preenchimento é obrigatório.");
+            primeiroErro.focus();
+            primeiroErro.scrollIntoView({behavior: "smooth", block: "center"});
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Configura a cor de fundo inicial baseada nas observacoes e faltas atuais ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+        const obsTextareas = document.querySelectorAll('textarea[id^="observacao_"]');
+        obsTextareas.forEach(ta => {
+            ta.addEventListener('input', function() {
+                const alunoId = this.id.split('_')[1];
+                const card = document.getElementById('card_' + alunoId);
+                const presente = document.getElementById('presente_' + alunoId).checked;
+                
+                if (presente) {
+                    if (this.value.trim() !== '') {
+                        card.style.background = '#fffdf0';
+                    } else {
+                        card.style.background = 'white';
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
