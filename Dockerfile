@@ -43,4 +43,5 @@ EXPOSE 8000
 
 # O comando para iniciar o servidor (pode ser sobrescrito pelo entrypoint)
 # Gunicorn com 3 workers (boa prática = (2 x $num_cores) + 1)
+ENTRYPOINT ["sh", "scripts/entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "core.wsgi:application"]
