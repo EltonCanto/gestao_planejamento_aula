@@ -16,8 +16,6 @@ services:
       - db_data:/app/db
       # Volume para arquivos gerados e upados não sumirem
       - media_data:/app/media
-      # Mapeia token do Google para persistir auth
-      - google_token:/app/token.json
     environment:
       # Informamos ao Django onde o SQLite deve ficar (dentro do volume montado /app/db/)
       - DATABASE_URL=sqlite:////app/db/db.sqlite3
@@ -27,5 +25,3 @@ volumes:
     name: gestao_aulas_db
   media_data:
     name: gestao_aulas_media
-  google_token:
-    name: gestao_aulas_google_auth
