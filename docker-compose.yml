@@ -7,8 +7,15 @@ services:
     restart: unless-stopped
     ports:
       - "80:8000"
-    env_file:
-      - .env
+    environment:
+      # Informamos ao Django onde o SQLite deve ficar (dentro do volume montado /app/db/)
+      - DATABASE_URL=sqlite:////app/db/db.sqlite3
+      # Variáveis injetadas pelo Portainer
+      - DJANGO_DEBUG
+      - DJANGO_SECRET_KEY
+      - DJANGO_ALLOWED_HOSTS
+      - DJANGO_CSRF_TRUSTED_ORIGINS
+      - OPENROUTER_API_KEY
     volumes:
       # Volume para o banco de dados SQLite persistir após recriação do container
       - db_data:/app/db
@@ -17,9 +24,7 @@ services:
       # Volumes para o Google Drive funcionar e o token persistir
       - ./token.json:/app/token.json
       - ./client_secret_515767878524-kidm2nv1qbc2rp4gcj6r52rghch7mojh.apps.googleusercontent.com.json:/app/client_secret_515767878524-kidm2nv1qbc2rp4gcj6r52rghch7mojh.apps.googleusercontent.com.json
-    environment:
-      # Informamos ao Django onde o SQLite deve ficar (dentro do volume montado /app/db/)
-      - DATABASE_URL=sqlite:////app/db/db.sqlite3
+
 
 volumes:
   db_data:
