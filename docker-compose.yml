@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: gestao_aulas_web
+    restart: unless-stopped
+    ports:
+      - "80:8000"
+    # O entrypoint.sh cuidará de migrar o banco e gerar estáticos ANTES do servidor iniciar
+    command: sh scripts/entrypoint.sh
+    env_file:
+      - .env
+    volumes:
+      # Volume para o banco de dados SQLite persistir após recriação do container
+      - db_data:/app/db
+      # Volume para arquivos gerados e upados não sumirem
+      - media_data:/app/media
+      # Mapeia token do Google para persistir auth
+      - google_token:/app/token.json
+    environment:
+      # Informamos ao Django onde o SQLite deve ficar (dentro do volume montado /app/db/)
+      - DATABASE_URL=sqlite:////app/db/db.sqlite3
+
+volumes:
+  db_data:
+    name: gestao_aulas_db
+  media_data:
+    name: gestao_aulas_media
+  google_token:
+    name: gestao_aulas_google_auth

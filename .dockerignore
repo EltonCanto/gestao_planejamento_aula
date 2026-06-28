@@ -1,0 +1,25 @@
+# Evitar enviar arquivos do github e metadados
+.git/
+.gitignore
+.dockerignore
+
+# Evitar enviar ambientes virtuais
+venv/
+env/
+.env
+
+# Evitar enviar arquivos de banco de dados locais (usaremos volume)
+db.sqlite3
+
+# Evitar enviar arquivos compilados e de cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ignorar mídias locais de testes
+media/
+staticfiles/
+
+# Logs locais
+*.log
