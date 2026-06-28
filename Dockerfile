@@ -28,8 +28,8 @@ RUN pip install --no-cache-dir -r requirements-prod.txt
 COPY . /app/
 
 # Garante permissões adequadas nos diretórios que precisam de escrita
-RUN mkdir -p /app/staticfiles /app/media \
-    && chmod -R 777 /app/media /app/staticfiles
+RUN mkdir -p /app/staticfiles /app/media /app/db \
+    && chmod -R 777 /app/media /app/staticfiles /app/db
 
 # Cria um usuário não privilegiado para rodar a aplicação por segurança (best practice)
 RUN adduser --disabled-password --no-create-home appuser \
