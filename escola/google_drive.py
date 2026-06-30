@@ -14,26 +14,51 @@ def get_drive_service():
     """
     Obtém o serviço do Google Drive autenticado.
     Se o token.json não existir, inicia o fluxo de autenticação via browser.
+    Agora suporta Variáveis de Ambiente para facilitar o deploy no Portainer.
     """
+    import json
+    
     creds = None
     token_path = 'token.json'
     
-    if os.path.exists(token_path):
+    # 1. Tenta carregar o token da variável de ambiente (Deploy Portainer)
+    env_token = os.getenv('GOOGLE_DRIVE_TOKEN_JSON')
+    if env_token:
+        try:
+            token_info = json.loads(env_token)
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except Exception as e:
+            print("Erro ao carregar token da variável de ambiente:", e)
+
+    # 2. Fallback para arquivo local se a variável não existir
+    if not creds and os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     
-    # Se não houver credenciais válidas disponíveis, pede para o usuário logar.
+    # Se não houver credenciais válidas disponíveis, atualiza ou pede login.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS_FILE, SCOPES)
-            # Rodar o servidor localmente para receber o callback
+            env_secret = os.getenv('GOOGLE_DRIVE_CLIENT_SECRET_JSON')
+            if env_secret:
+                try:
+                    client_config = json.loads(env_secret)
+                    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+                except Exception as e:
+                    print("Erro ao carregar client secret da variável:", e)
+                    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+                
+            # Rodar o servidor localmente para receber o callback (só funciona localmente)
             creds = flow.run_local_server(port=0)
         
         # Salva as credenciais para o próximo uso
-        with open(token_path, 'w') as token:
-            token.write(creds.to_json())
+        try:
+            with open(token_path, 'w') as token:
+                token.write(creds.to_json())
+        except Exception:
+            pass # Ignora silenciosamente se for readonly
             
     return build('drive', 'v3', credentials=creds)
 
